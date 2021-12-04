@@ -16,7 +16,9 @@ class Game:
         self.ghosts = []
         self.read_layout()
         self.load_icon()
+        self.all_sprites = pygame.sprite.Group()
         self.add_ghosts()
+
     
     def load_icon(self):
         self.icon = pygame.image.load('icon.jpg').convert_alpha()
@@ -39,6 +41,7 @@ class Game:
                 self.running = False
     
     def update(self):
+        self.all_sprites.update()
         for ghost in self.ghosts:
             ghost.update()
             pass
@@ -46,6 +49,7 @@ class Game:
     def draw(self):
         self.screen.fill(BLACK)
         self.draw_layout()
+        self.all_sprites.draw(self.screen)
         for ghost in self.ghosts:
             ghost.draw()
         pygame.display.update()
@@ -73,7 +77,14 @@ class Game:
 
 
     def add_ghosts(self):
-        self.ghosts = [GhostAgent([11,12], self, 'pink'), GhostAgent([16,12], self, 'yellow'), GhostAgent([14,13], self, 'red'),GhostAgent([11,14], self, 'blue')]
+        ghost1 = GhostAgent([11,12], self, 'pink')
+        self.all_sprites.add(ghost1)
+        ghost2 = GhostAgent([16,12], self, 'yellow')
+        self.all_sprites.add(ghost2)
+        ghost3 = GhostAgent([14,13], self, 'red')
+        self.all_sprites.add(ghost3)
+        ghost4 = GhostAgent([11,14], self, 'blue')
+        self.all_sprites.add(ghost4)
 
     def add_wall(self, x,y):
         self.map[x][y] = Tile(wall=True)
@@ -92,17 +103,17 @@ class Tile():
     def get_colour(self):
         return self.colour
 
-class GhostAgent():
-    def __init__(self, index, game, colour='pink'):
+class GhostAgent(pygame.sprite.Sprite):
+    def __init__(self, pos, game, colour='pink'):
+        pygame.sprite.Sprite.__init__(self)
         self.ratio = 0
-        self.direction = 0
-        self.pos = index
+        self.pos = pos
         self.game = game
         self.direction = (1,1)
-        self.pixel = ()
         self.image = pygame.image.load(f'ghost_{colour}.png').convert_alpha()
         self.image = pygame.transform.scale(self.image, (CELL_WIDTH, CELL_HEIGHT))
-
+        self.rect = self.image.get_rect()
+        self.rect.center= (pos[0]*CELL_WIDTH,pos[1]*CELL_HEIGHT)
 
     def get_next_move(self):
         moves = self.get_possible_actions()
@@ -111,24 +122,13 @@ class GhostAgent():
 
     def update(self):
         self.direction = self.get_next_move()
-
         self.pos[0] += self.direction[0]
         self.pos[1] += self.direction[1]
-        """
-        self.pix_pos[0] += self.direction[0] * self.speed
-        self.pix_pos[1] += self.direction[1] * self.speed
-        """
+        self.rect.x += (self.direction[0] * CELL_WIDTH)
+        self.rect.y += (self.direction[1] * CELL_HEIGHT)
     
     def get_possible_actions(self):
         possible = []
-        """
-        pos_x = pos[0] +  0.5
-        pos_y = pos[1] + 0.5
-        
-        # In between grid points, all agents must continue straight
-        if (abs(pos[0] - pos_x) + abs(pos[1] - pos_y)  > Actions.TOLERANCE):
-            return [self.direction]
-        """
         x = self.pos[0] + self.direction[0]
         y = self.pos[1] + self.direction[1]
         if not self.game.map[x][y].is_wall():
@@ -139,11 +139,6 @@ class GhostAgent():
             if not self.game.map[x][y].is_wall():
                 possible.append(vec)
         return possible
-    
-    def draw(self):
-        
-        self.game.screen.blit(self.image, (self.pos[0]*CELL_WIDTH, self.pos[1]*CELL_HEIGHT))
-        
 class Actions:
     """
     A collection of static methods for manipulating move actions.
