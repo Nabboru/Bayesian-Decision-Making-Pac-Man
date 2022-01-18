@@ -13,10 +13,9 @@ class Game:
         self.running = True
         pygame.display.set_caption('Ghosts')
         self.map = [[Tile() for j in range(ROWS)] for i in range(COLS)]
-        self.ghosts = []
+        self.all_sprites = pygame.sprite.Group()
         self.read_layout()
         self.load_icon()
-        self.all_sprites = pygame.sprite.Group()
         self.add_ghosts()
 
     
@@ -42,16 +41,11 @@ class Game:
     
     def update(self):
         self.all_sprites.update()
-        for ghost in self.ghosts:
-            ghost.update()
-            pass
 
     def draw(self):
         self.screen.fill(BLACK)
         self.draw_layout()
         self.all_sprites.draw(self.screen)
-        for ghost in self.ghosts:
-            ghost.draw()
         pygame.display.update()
 
     
@@ -69,11 +63,11 @@ class Game:
         for x in range(COLS):
             for y in range(ROWS):
                 if self.map[x][y].is_wall():
-                    pygame.draw.rect(self.screen, DARK_BLUE, (x*CELL_WIDTH, y*CELL_HEIGHT,
-                                                    CELL_WIDTH - 3, CELL_HEIGHT-3), 0, 3)
+                    pygame.draw.rect(self.screen, NAVY, (x*CELL_WIDTH, y*CELL_HEIGHT,
+                                                    CELL_WIDTH - 1, CELL_HEIGHT-1), 0, 3)
                 elif self.map[x][y].get_colour():
                     pygame.draw.rect(self.screen, self.map[x][y].get_colour(), (x*CELL_WIDTH, y*CELL_HEIGHT,
-                                                CELL_WIDTH - 1, CELL_HEIGHT-1), 0, 2)
+                                                CELL_WIDTH - 1, CELL_HEIGHT-1), 0, 3)
 
 
     def add_ghosts(self):
@@ -110,10 +104,11 @@ class GhostAgent(pygame.sprite.Sprite):
         self.pos = pos
         self.game = game
         self.direction = (1,1)
+        
         self.image = pygame.image.load(f'ghost_{colour}.png').convert_alpha()
         self.image = pygame.transform.scale(self.image, (CELL_WIDTH, CELL_HEIGHT))
         self.rect = self.image.get_rect()
-        self.rect.center= (pos[0]*CELL_WIDTH,pos[1]*CELL_HEIGHT)
+        self.rect.center= (pos[0]*CELL_WIDTH+10,pos[1]*CELL_HEIGHT+10)
 
     def get_next_move(self):
         moves = self.get_possible_actions()
@@ -139,6 +134,12 @@ class GhostAgent(pygame.sprite.Sprite):
             if not self.game.map[x][y].is_wall():
                 possible.append(vec)
         return possible
+    
+    def bayesian_algorithm(self):
+        pass
+    def benchmark_algorithm(self):
+        pass
+    
 class Actions:
     """
     A collection of static methods for manipulating move actions.
@@ -154,4 +155,3 @@ class Actions:
         # West
         (-1, 0)
     ]
-    TOLERANCE = .001
