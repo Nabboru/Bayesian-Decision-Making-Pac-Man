@@ -2,6 +2,7 @@ import pygame
 import sys
 from settings import *
 import random
+from scipy.stats import beta
 
 pygame.init()
 Vector2 = pygame.math.Vector2
@@ -17,7 +18,6 @@ class Game:
         self.read_layout()
         self.load_icon()
         self.add_ghosts()
-
     
     def load_icon(self):
         self.icon = pygame.image.load('icon.jpg').convert_alpha()
@@ -84,9 +84,8 @@ class Game:
         self.map[x][y] = Tile(wall=True)
 
     def add_tile(self, x, y):
-        colour = random.choice([WHITE, GREY])
-        self.map[x][y] = Tile(colour=colour)
-
+        colour = random.choices(population=[WHITE, GREY],weights=[0.4, 0.6])
+        self.map[x][y] = Tile(colour=colour[0])
 
 class Tile():
     def __init__(self, wall = False, colour=""):
@@ -98,17 +97,26 @@ class Tile():
         return self.colour
 
 class GhostAgent(pygame.sprite.Sprite):
-    def __init__(self, pos, game, colour='pink'):
+    def __init__(self, pos, g, colour='pink'):
         pygame.sprite.Sprite.__init__(self)
         self.ratio = 0
         self.pos = pos
-        self.game = game
         self.direction = (1,1)
+        self.colour = colour
         
         self.image = pygame.image.load(f'ghost_{colour}.png').convert_alpha()
         self.image = pygame.transform.scale(self.image, (CELL_WIDTH, CELL_HEIGHT))
         self.rect = self.image.get_rect()
         self.rect.center= (pos[0]*CELL_WIDTH+10,pos[1]*CELL_HEIGHT+10)
+
+        self.alpha = 1
+        self.beta = 1
+        self.index = 0
+        self.decision = -1
+        self.observations = {}
+        
+    def __str__(self) -> str:
+        return "Ghost " + self.colour
 
     def get_next_move(self):
         moves = self.get_possible_actions()
@@ -116,6 +124,9 @@ class GhostAgent(pygame.sprite.Sprite):
         return next_move
 
     def update(self):
+        self.bayesian_algorithm()
+    
+    def walk(self):
         self.direction = self.get_next_move()
         self.pos[0] += self.direction[0]
         self.pos[1] += self.direction[1]
@@ -126,19 +137,56 @@ class GhostAgent(pygame.sprite.Sprite):
         possible = []
         x = self.pos[0] + self.direction[0]
         y = self.pos[1] + self.direction[1]
-        if not self.game.map[x][y].is_wall():
+        if not game.map[x][y].is_wall():
             return [self.direction]
         for vec in Actions.directions:
             x = self.pos[0] + vec[0]
             y = self.pos[1] + vec[1]
-            if not self.game.map[x][y].is_wall():
+            if not game.map[x][y].is_wall():
                 possible.append(vec)
         return possible
     
     def bayesian_algorithm(self):
-        pass
+        self.walk()
+        C = COLOURS[game.map[self.pos[0]][self.pos[1]].get_colour()]
+        self.alpha += C
+        self.beta += (1 - C)
+        self.index += 1
+        m = (self.pos,  self.index, C)
+        if self.observations:
+            pass
+        if self.decision == -1:
+            p = beta.cdf(0.5, self.alpha, self.beta, loc=0, scale=1)
+            if p > 0.5:
+                self.decision = 0
+            elif (1 - p) > 0.5:
+                self.decision = 1
+        print(f'\n{self}')
+        print(f'alpha: {self.alpha}')
+        print(f'beta: {self.beta}')
+        print(f'i: {self.index}')
+        print(f'decision: {self.decision}')
+        if self.decision != -1:
+            self.broadcast(self.decision)
+        else:
+            self.broadcast(C)
+
+    def broadcast(self, info):
+        for s in game.all_sprites.sprites():
+            if s != self:
+                if abs(s.pos[0] - self.pos[0]) < 2 and abs(s.pos[1] - self.pos[1]) < 2:
+                    s.receive(info , self.pos)
+    
+    def receive(self, info, source):
+        self.alpha += info
+        self.beta += (1 - info)
+        #print(f'communicated from {source} to {self.pos}')
+        
+
     def benchmark_algorithm(self):
-        pass
+        if True:
+            pass
+
     
 class Actions:
     """
@@ -155,3 +203,5 @@ class Actions:
         # West
         (-1, 0)
     ]
+
+game = Game()
