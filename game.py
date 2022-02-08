@@ -1,8 +1,12 @@
+from numpy import broadcast
 import pygame
 import sys
 from settings import *
 import random
 from scipy.stats import beta
+import math
+from ghosts import GhostAgent
+
 
 pygame.init()
 Vector2 = pygame.math.Vector2
@@ -71,20 +75,20 @@ class Game:
 
 
     def add_ghosts(self):
-        ghost1 = GhostAgent([11,12], self, 'pink')
+        ghost1 = GhostAgent([11,12], self, 'pink', self.map, self.all_sprites)
         self.all_sprites.add(ghost1)
-        ghost2 = GhostAgent([16,12], self, 'yellow')
+        ghost2 = GhostAgent([16,12], self, 'yellow', self.map, self.all_sprites)
         self.all_sprites.add(ghost2)
-        ghost3 = GhostAgent([14,13], self, 'red')
+        ghost3 = GhostAgent([14,13], self, 'red', self.map, self.all_sprites)
         self.all_sprites.add(ghost3)
-        ghost4 = GhostAgent([11,14], self, 'blue')
+        ghost4 = GhostAgent([11,14], self, 'blue', self.map, self.all_sprites)
         self.all_sprites.add(ghost4)
 
     def add_wall(self, x,y):
         self.map[x][y] = Tile(wall=True)
 
     def add_tile(self, x, y):
-        colour = random.choices(population=[WHITE, GREY],weights=[0.4, 0.6])
+        colour = random.choices(population=[WHITE, GREY],weights=[0.7, 0.3])
         self.map[x][y] = Tile(colour=colour[0])
 
 class Tile():
@@ -95,15 +99,17 @@ class Tile():
         return self.wall
     def get_colour(self):
         return self.colour
-
 class GhostAgent(pygame.sprite.Sprite):
-    def __init__(self, pos, g, colour='pink'):
+    def __init__(self, pos, g, colour='pink', wall_map = None, friends = None):
         pygame.sprite.Sprite.__init__(self)
         self.ratio = 0
         self.pos = pos
         self.direction = (1,1)
         self.colour = colour
-        
+
+        self.friends = friends
+
+        self.map = wall_map
         self.image = pygame.image.load(f'ghost_{colour}.png').convert_alpha()
         self.image = pygame.transform.scale(self.image, (CELL_WIDTH, CELL_HEIGHT))
         self.rect = self.image.get_rect()
@@ -114,7 +120,12 @@ class GhostAgent(pygame.sprite.Sprite):
         self.index = 0
         self.decision = -1
         self.observations = {}
-        
+        self.s = (28 * 26) / 4
+        self.t_comm = 2 * math.log(4 ** 2 / 0.1) * (28 + 26)
+        self.phase_1 = self.s
+        self.phase_2 = self.s + self.t_comm
+        self.stop = False
+
     def __str__(self) -> str:
         return "Ghost " + self.colour
 
@@ -137,57 +148,97 @@ class GhostAgent(pygame.sprite.Sprite):
         possible = []
         x = self.pos[0] + self.direction[0]
         y = self.pos[1] + self.direction[1]
-        if not game.map[x][y].is_wall():
+        if not self.map[x][y].is_wall():
             return [self.direction]
         for vec in Actions.directions:
             x = self.pos[0] + vec[0]
             y = self.pos[1] + vec[1]
-            if not game.map[x][y].is_wall():
+            if not self.map[x][y].is_wall():
                 possible.append(vec)
         return possible
     
     def bayesian_algorithm(self):
         self.walk()
-        C = COLOURS[game.map[self.pos[0]][self.pos[1]].get_colour()]
-        self.alpha += C
-        self.beta += (1 - C)
+        C = COLOURS[self.map[self.pos[0]][self.pos[1]].get_colour()]
+        self.update_ratio(C)
         self.index += 1
-        m = (self.pos,  self.index, C)
-        if self.observations:
-            pass
         if self.decision == -1:
             p = beta.cdf(0.5, self.alpha, self.beta, loc=0, scale=1)
-            if p > 0.5:
+            if p > 0.99:
                 self.decision = 0
-            elif (1 - p) > 0.5:
+            elif (1 - p) > 0.99:
                 self.decision = 1
+        """
         print(f'\n{self}')
         print(f'alpha: {self.alpha}')
         print(f'beta: {self.beta}')
-        print(f'i: {self.index}')
+        print(f'i: {self.index}')        
+        """
         print(f'decision: {self.decision}')
+    
         if self.decision != -1:
-            self.broadcast(self.decision)
+            self.bayes_broadcast(self.index, self.decision)
         else:
-            self.broadcast(C)
+            self.bayes_broadcast(self.index, C)   
 
-    def broadcast(self, info):
-        for s in game.all_sprites.sprites():
+    def update_ratio(self, observation):
+        self.alpha += observation
+        self.beta += (1 - observation)
+
+    def bayes_broadcast(self, index, info):
+        for s in self.friends.sprites():
             if s != self:
                 if abs(s.pos[0] - self.pos[0]) < 2 and abs(s.pos[1] - self.pos[1]) < 2:
-                    s.receive(info , self.pos)
-    
-    def receive(self, info, source):
-        self.alpha += info
-        self.beta += (1 - info)
-        #print(f'communicated from {source} to {self.pos}')
-        
+                    s.bayes_receive(self.colour, index, info)
+
+    def bayes_receive(self, id, i, info):
+        if id in self.observations:
+            if self.observations[id] != (i, info):
+                self.update_ratio(info)
+            print(f'communication from {id} to {self.colour}')
+        else:
+            self.observations[id] = (i, info)
+            self.update_ratio(info)
+            print(f'communication from {id} to {self.colour}')
+
+    def bdm_broadcast(self, alpha, beta):
+        for s in  game.all_sprites.sprites():
+            if s != self:
+                if abs(s.pos[0] - self.pos[0]) < 2 and abs(s.pos[1] - self.pos[1]) < 2:
+                    s.bdm_receive(self.colour, alpha, beta)
+
+    def bdm_receive(self, id, alpha, beta):
+        self.observations[id] = (alpha, beta)
 
     def benchmark_algorithm(self):
-        if True:
-            pass
+        if self.stop:
+            return
+        if self.phase_1 > 0:
+            self.walk()
+            C = COLOURS[game.map[self.pos[0]][self.pos[1]].get_colour()]
+            self.update_ratio(C)
+            self.phase_1 -= 1
+            return
+        if self.phase_2 > self.s:
+            self.walk()
+            self.observations[self.colour] = (self.alpha, self.beta)
+            self.bdm_broadcast(self.alpha, self.beta)
+            self.phase_2 -= 1
+            return
+        alpha_t = 0
+        beta_t = 0
+        for value in self.observations.values():
+            alpha_t += value[0]
+            beta_t += value[1]
+        if beta_t > alpha_t:
+            self.decision = 0
+        else:
+            self.decision = 1
+        print(self.decision)
+        self.stop = True
+    def event():
+        pass
 
-    
 class Actions:
     """
     A collection of static methods for manipulating move actions.
