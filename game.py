@@ -1,4 +1,3 @@
-from numpy import broadcast
 import pygame
 import sys
 from settings import *
@@ -7,28 +6,35 @@ from scipy.stats import beta
 import math
 from ghosts import GhostAgent
 
-
 pygame.init()
 Vector2 = pygame.math.Vector2
 
 class Game:
-    def __init__(self) -> None:
+    def __init__(self, algorithm=1, ratio=0.6) -> None:
+        self.map = []
+        self.ratio = ratio
+        COLS = 0
+        print(COLS)
+
+        self.build_map()
+        self.read_layout()
+        print(len(self.map))
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.clock = pygame.time.Clock()
         self.running = True
         pygame.display.set_caption('Ghosts')
-        self.map = [[Tile() for j in range(ROWS)] for i in range(COLS)]
+        self.algorithm = algorithm
         self.all_sprites = pygame.sprite.Group()
         self.read_layout()
         self.load_icon()
         self.add_ghosts()
     
-    def load_icon(self):
+    def load_icon(self) -> None:
         self.icon = pygame.image.load('icon.jpg').convert_alpha()
         self.icon = pygame.transform.scale(self.icon, (30, 30))
         pygame.display.set_icon(self.icon)
 
-    def run(self):
+    def run(self) -> None:
         while self.running:
             self.events()
             self.update()
@@ -38,7 +44,7 @@ class Game:
 
         sys.exit()
     
-    def events(self):
+    def events(self) -> None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
@@ -51,8 +57,17 @@ class Game:
         self.draw_layout()
         self.all_sprites.draw(self.screen)
         pygame.display.update()
-
     
+    def build_map(self):
+        rows = 0
+        cols = 0
+        with open('classicMaze.lay', 'r') as file:
+            for y, line in enumerate(file):
+                rows += 1
+                cols = len(line)                    
+
+        self.map = [[Tile() for j in range(rows)] for i in range(cols)]
+
     def read_layout(self):
         with open("classicMaze.lay", 'r') as file:
             for y, line in enumerate(file):
@@ -75,184 +90,35 @@ class Game:
 
 
     def add_ghosts(self):
-        ghost1 = GhostAgent([11,12], self, 'pink', self.map, self.all_sprites)
+        ghost1 = GhostAgent([14,15], 'pink', self.map, self.all_sprites, self.algorithm)
         self.all_sprites.add(ghost1)
-        ghost2 = GhostAgent([16,12], self, 'yellow', self.map, self.all_sprites)
+        ghost2 = GhostAgent([1,1], 'yellow', self.map, self.all_sprites, self.algorithm)
         self.all_sprites.add(ghost2)
-        ghost3 = GhostAgent([14,13], self, 'red', self.map, self.all_sprites)
+        ghost3 = GhostAgent([12,11], 'red', self.map, self.all_sprites, self.algorithm)
         self.all_sprites.add(ghost3)
-        ghost4 = GhostAgent([11,14], self, 'blue', self.map, self.all_sprites)
+        ghost4 = GhostAgent([26,26], 'blue', self.map, self.all_sprites, self.algorithm)
         self.all_sprites.add(ghost4)
+        ghost5 = GhostAgent([1,1], 'pink', self.map, self.all_sprites, self.algorithm)
+        self.all_sprites.add(ghost5)
+        ghost6 = GhostAgent([1,1], 'yellow', self.map, self.all_sprites, self.algorithm)
+        self.all_sprites.add(ghost6)
+        ghost7 = GhostAgent([1,1], 'red', self.map, self.all_sprites, self.algorithm)
+        self.all_sprites.add(ghost7)
+        ghost8 = GhostAgent([1,8], 'blue', self.map, self.all_sprites, self.algorithm)
+        self.all_sprites.add(ghost8)
 
     def add_wall(self, x,y):
         self.map[x][y] = Tile(wall=True)
 
     def add_tile(self, x, y):
-        colour = random.choices(population=[WHITE, GREY],weights=[0.7, 0.3])
+        colour = random.choices(population=[WHITE, GREY],weights=[self.ratio, 1-self.ratio])
         self.map[x][y] = Tile(colour=colour[0])
 
 class Tile():
     def __init__(self, wall = False, colour=""):
         self.wall = wall
         self.colour = colour
-    def is_wall(self):
+    def is_wall(self) -> bool:
         return self.wall
     def get_colour(self):
         return self.colour
-class GhostAgent(pygame.sprite.Sprite):
-    def __init__(self, pos, g, colour='pink', wall_map = None, friends = None):
-        pygame.sprite.Sprite.__init__(self)
-        self.ratio = 0
-        self.pos = pos
-        self.direction = (1,1)
-        self.colour = colour
-
-        self.friends = friends
-
-        self.map = wall_map
-        self.image = pygame.image.load(f'ghost_{colour}.png').convert_alpha()
-        self.image = pygame.transform.scale(self.image, (CELL_WIDTH, CELL_HEIGHT))
-        self.rect = self.image.get_rect()
-        self.rect.center= (pos[0]*CELL_WIDTH+10,pos[1]*CELL_HEIGHT+10)
-
-        self.alpha = 1
-        self.beta = 1
-        self.index = 0
-        self.decision = -1
-        self.observations = {}
-        self.s = (28 * 26) / 4
-        self.t_comm = 2 * math.log(4 ** 2 / 0.1) * (28 + 26)
-        self.phase_1 = self.s
-        self.phase_2 = self.s + self.t_comm
-        self.stop = False
-
-    def __str__(self) -> str:
-        return "Ghost " + self.colour
-
-    def get_next_move(self):
-        moves = self.get_possible_actions()
-        next_move = random.choice(moves)
-        return next_move
-
-    def update(self):
-        self.bayesian_algorithm()
-    
-    def walk(self):
-        self.direction = self.get_next_move()
-        self.pos[0] += self.direction[0]
-        self.pos[1] += self.direction[1]
-        self.rect.x += (self.direction[0] * CELL_WIDTH)
-        self.rect.y += (self.direction[1] * CELL_HEIGHT)
-    
-    def get_possible_actions(self):
-        possible = []
-        x = self.pos[0] + self.direction[0]
-        y = self.pos[1] + self.direction[1]
-        if not self.map[x][y].is_wall():
-            return [self.direction]
-        for vec in Actions.directions:
-            x = self.pos[0] + vec[0]
-            y = self.pos[1] + vec[1]
-            if not self.map[x][y].is_wall():
-                possible.append(vec)
-        return possible
-    
-    def bayesian_algorithm(self):
-        self.walk()
-        C = COLOURS[self.map[self.pos[0]][self.pos[1]].get_colour()]
-        self.update_ratio(C)
-        self.index += 1
-        if self.decision == -1:
-            p = beta.cdf(0.5, self.alpha, self.beta, loc=0, scale=1)
-            if p > 0.99:
-                self.decision = 0
-            elif (1 - p) > 0.99:
-                self.decision = 1
-        """
-        print(f'\n{self}')
-        print(f'alpha: {self.alpha}')
-        print(f'beta: {self.beta}')
-        print(f'i: {self.index}')        
-        """
-        print(f'decision: {self.decision}')
-    
-        if self.decision != -1:
-            self.bayes_broadcast(self.index, self.decision)
-        else:
-            self.bayes_broadcast(self.index, C)   
-
-    def update_ratio(self, observation):
-        self.alpha += observation
-        self.beta += (1 - observation)
-
-    def bayes_broadcast(self, index, info):
-        for s in self.friends.sprites():
-            if s != self:
-                if abs(s.pos[0] - self.pos[0]) < 2 and abs(s.pos[1] - self.pos[1]) < 2:
-                    s.bayes_receive(self.colour, index, info)
-
-    def bayes_receive(self, id, i, info):
-        if id in self.observations:
-            if self.observations[id] != (i, info):
-                self.update_ratio(info)
-            print(f'communication from {id} to {self.colour}')
-        else:
-            self.observations[id] = (i, info)
-            self.update_ratio(info)
-            print(f'communication from {id} to {self.colour}')
-
-    def bdm_broadcast(self, alpha, beta):
-        for s in  game.all_sprites.sprites():
-            if s != self:
-                if abs(s.pos[0] - self.pos[0]) < 2 and abs(s.pos[1] - self.pos[1]) < 2:
-                    s.bdm_receive(self.colour, alpha, beta)
-
-    def bdm_receive(self, id, alpha, beta):
-        self.observations[id] = (alpha, beta)
-
-    def benchmark_algorithm(self):
-        if self.stop:
-            return
-        if self.phase_1 > 0:
-            self.walk()
-            C = COLOURS[game.map[self.pos[0]][self.pos[1]].get_colour()]
-            self.update_ratio(C)
-            self.phase_1 -= 1
-            return
-        if self.phase_2 > self.s:
-            self.walk()
-            self.observations[self.colour] = (self.alpha, self.beta)
-            self.bdm_broadcast(self.alpha, self.beta)
-            self.phase_2 -= 1
-            return
-        alpha_t = 0
-        beta_t = 0
-        for value in self.observations.values():
-            alpha_t += value[0]
-            beta_t += value[1]
-        if beta_t > alpha_t:
-            self.decision = 0
-        else:
-            self.decision = 1
-        print(self.decision)
-        self.stop = True
-    def event():
-        pass
-
-class Actions:
-    """
-    A collection of static methods for manipulating move actions.
-    """
-    # Directions
-    directions = [
-        # North
-        (0, 1),
-        # South
-        (0, -1),
-        #East
-        (1, 0),
-        # West
-        (-1, 0)
-    ]
-
-game = Game()
