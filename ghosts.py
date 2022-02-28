@@ -17,7 +17,7 @@ class GhostAgent(pygame.sprite.Sprite):
         self.algorithm = None
 
         self.map = wall_map
-        self.image = pygame.image.load(f'ghost_{colour}.png').convert_alpha()
+        self.image = pygame.image.load(f'.\images\ghost_{colour}.png').convert_alpha()
         self.image = pygame.transform.scale(self.image, (CELL_WIDTH, CELL_HEIGHT))
         self.rect = self.image.get_rect()
         self.rect.center= (pos[0]*CELL_WIDTH+10,pos[1]*CELL_HEIGHT+10)
