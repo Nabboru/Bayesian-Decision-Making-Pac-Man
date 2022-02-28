@@ -12,20 +12,28 @@ if __name__ == '__main__':
     parser.add_argument('--ratio', required=False,
                         metavar="float number",
                         help='Ratio of whites to black tiles, eg. 0.6')
+    parser.add_argument('--map', required=False,
+                        metavar="map name",
+                        help="Name of the map, e.g. classic")
     args = parser.parse_args()
     game = None
     ratio = 0.6
+    map = 'classic'
 
     if args.algorithm != "benchmark" and args.algorithm != "bayesian":
         raise ValueError('Invalid algorithm.')    
+    
     if args.ratio:
         ratio = float(args.ratio)
+    
+    if args.map:
+        map = args.map
 
     if args.algorithm == "benchmark":
         print("Benchmark algorithm starts")
-        game = Game(2, ratio)
+        game = Game(2, ratio, map)
     else:
         print("Bayesian algorithm starts")
-        game = Game(1, ratio)
+        game = Game(1, ratio, map)
 
     game.run()

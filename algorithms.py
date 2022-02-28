@@ -12,9 +12,9 @@ class BayesianAlgorithm:
         self.update_ratio(C)
         if self.decision == -1:
             p = beta.cdf(0.5, self.alpha, self.beta, loc=0, scale=1)
-            if p > 0.99:
+            if p > 0.9:
                 self.decision = 0
-            elif (1 - p) > 0.99:
+            elif (1 - p) > 0.9:
                 self.decision = 1
 
     def update_ratio(self, observation):

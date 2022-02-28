@@ -17,7 +17,7 @@ class Game:
         self.build_map(map)
         self.read_layout(map)
         SCREEN_HEIGHT = len(self.map[0]) * 24
-        SCREEN_WIDTH = len(self.map) * 20
+        SCREEN_WIDTH = len(self.map) * 20 + 400
 
         # Pygame settings
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -40,7 +40,7 @@ class Game:
             self.events()
             self.update()
             self.draw()
-            self.clock.tick(100)
+            self.clock.tick(20)
         pygame.quit()
 
         sys.exit()
@@ -77,6 +77,7 @@ class Game:
                         self.add_wall(x, y)
                     elif char == "*":
                         self.add_tile(x, y)
+
     def draw_layout(self):
         for x in range(len(self.map)):
             for y in range(len(self.map[0])):
