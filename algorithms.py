@@ -11,10 +11,10 @@ class BayesianAlgorithm:
     def update(self, C):
         self.update_ratio(C)
         if self.decision == -1:
-            p = beta.cdf(0.5, self.alpha, self.beta, loc=0, scale=1)
-            if p > 0.9:
+            p = beta.cdf(0.5, self.alpha+1, self.beta+1, loc=0, scale=1)
+            if p > 0.999:
                 self.decision = 0
-            elif (1 - p) > 0.9:
+            elif (1 - p) > 0.999:
                 self.decision = 1
 
     def update_ratio(self, observation):
@@ -29,7 +29,7 @@ class BenchmarkAlgorithm():
         self.s = (rows * columns)
         self.t_comm = 2 * math.log(4 ** 2 / 0.1) * (rows + columns)
         self.phase_1 = self.s
-        self.phase_2 = self.s + self.t_comm
+        self.phase_2 = self.s + self.t_comm 
         self.observations = {}
     
     def update(self, C):

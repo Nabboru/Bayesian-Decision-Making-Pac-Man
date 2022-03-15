@@ -5,11 +5,9 @@ from scipy.stats import beta
 import math
 from algorithms import BayesianAlgorithm, BenchmarkAlgorithm
 
-
 class GhostAgent(pygame.sprite.Sprite):
     def __init__(self, pos, colour='pink', wall_map = None, friends = None, algorithm2=1):
         pygame.sprite.Sprite.__init__(self)
-        self.ratio = 0
         self.pos = pos
         self.direction = (0,0)
         self.colour = colour
@@ -47,6 +45,17 @@ class GhostAgent(pygame.sprite.Sprite):
             self.bayesian_algorithm()
         else:
             self.benchmark_algorithm()
+        if self.algorithm.decision == 0:
+            self.image = pygame.image.load(f'.\images\ghost_black.png').convert_alpha()
+            self.image = pygame.transform.scale(self.image, (CELL_WIDTH, CELL_HEIGHT))
+            self.rect = self.image.get_rect()
+            self.rect.center= (self.pos[0]*CELL_WIDTH+10,self.pos[1]*CELL_HEIGHT+10)
+        if self.algorithm.decision == 1:
+            self.image = pygame.image.load(f'.\images\ghost_white.png').convert_alpha()
+            self.image = pygame.transform.scale(self.image, (CELL_WIDTH, CELL_HEIGHT))
+            self.rect = self.image.get_rect()
+            self.rect.center= (self.pos[0]*CELL_WIDTH+10,self.pos[1]*CELL_HEIGHT+10)
+
 
     def walk(self):
         self.direction = self.get_next_move()
@@ -66,10 +75,12 @@ class GhostAgent(pygame.sprite.Sprite):
     
     def bayesian_algorithm(self):
         self.walk()
-        C = COLOURS[self.map[self.pos[0]][self.pos[1]].get_colour()]
-        self.algorithm.update(C)
+        C = -1
+        if self.algorithm.decision == -1:
+            C = COLOURS[self.map[self.pos[0]][self.pos[1]].get_colour()]
+            self.algorithm.update(C)
 
-        print(f'{self.colour} decision: {self.algorithm.decision}')
+        #print(f'{self.colour} decision: {self.algorithm.decision}')
     
         if self.algorithm.decision != -1:
             self.bayes_broadcast(self.index, self.algorithm.decision)
@@ -78,26 +89,23 @@ class GhostAgent(pygame.sprite.Sprite):
 
     def bayes_broadcast(self, index, info):
         for s in self.friends.sprites():
-            if s != self:
+            if s != self and isinstance(s, GhostAgent):
                 if abs(s.pos[0] - self.pos[0]) < 3 and abs(s.pos[1] - self.pos[1]) < 3:
                     s.bayes_receive(self.colour, index, info)
-
+                
     def bayes_receive(self, id, i, info):
         if id in self.observations:
             if self.observations[id] != (i, info):
                 self.algorithm.update_ratio(info)
-            print(f'communication from {id} to {self.colour}')
         else:
             self.observations[id] = (i, info)
             self.algorithm.update_ratio(info)
-            print(f'communication from {id} to {self.colour}')
 
     def bdm_broadcast(self, alpha, beta):
         for s in self.friends.sprites():
             if s != self:
                 if abs(s.pos[0] - self.pos[0]) < 2 and abs(s.pos[1] - self.pos[1]) < 2:
                     s.bdm_receive(self, alpha, beta)
-                print(f'communication from {s.colour} to {self.colour}')
 
     def bdm_receive(self, id, alpha, beta):
         self.algorithm.observations[id] = (alpha, beta)
@@ -115,12 +123,9 @@ class GhostAgent(pygame.sprite.Sprite):
             self.bdm_broadcast(alpha, beta)
         
         if self.algorithm.decision != -1:
+            
             print(f'{self.colour} decision: {self.algorithm.decision}')
-            print(f'{self.algorithm.observations}')
             self.stop = True
-
-    def event():
-        pass
 
 class Actions:
     """
@@ -137,3 +142,38 @@ class Actions:
         # West
         (-1, 0)
     ]
+
+class CommunicationBubble(pygame.sprite.Sprite):
+    def __init__(self, text) -> None:
+        pygame.sprite.Sprite.__init__(self)
+        font = pygame.font.Font('freesansbold.ttf', 12)
+ 
+        # create a text surface object,
+        # on which text is drawn on it.
+        text = font.render(text, True, WHITE, BLACK)
+        self.image = text
+        # create a rectangular object for the
+        # text surface object
+        pos = (100, 1)
+        self.rect = text.get_rect()
+        self.rect.center= (pos[0]*CELL_WIDTH/3+10,pos[1]*CELL_HEIGHT/3+10)  
+        self.active = True
+        
+    def update(self):
+        if self.active:
+            self.kill()
+
+class Decision(pygame.sprite.Sprite):
+    def __init__(self, text) -> None:
+        pygame.sprite.Sprite.__init__(self)
+        font = pygame.font.Font('freesansbold.ttf', 12)
+ 
+        # create a text surface object,
+        # on which text is drawn on it.
+        text = font.render(text, True, WHITE, BLACK)
+        self.image = text
+        # create a rectangular object for the
+        # text surface object
+        pos = (100, 5)
+        self.rect = text.get_rect()
+        self.rect.center= (pos[0]*CELL_WIDTH/3+10,pos[1]*CELL_HEIGHT/3+10) 

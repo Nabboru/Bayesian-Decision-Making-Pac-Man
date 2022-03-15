@@ -31,9 +31,17 @@ if __name__ == '__main__':
 
     if args.algorithm == "benchmark":
         print("Benchmark algorithm starts")
-        game = Game(2, ratio, map)
+        for i in range(5):
+            game = Game(2, ratio, map)
+            game.run()
+            while game.running:
+                pass
+
     else:
         print("Bayesian algorithm starts")
-        game = Game(1, ratio, map)
+        for i in range(5):
+            game = Game(1, ratio, map)
+            game.run()
+            while game.running:
+                pass
 
-    game.run()
