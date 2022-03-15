@@ -3,19 +3,17 @@ import pygame
 import sys
 from settings import *
 import random
-from scipy.stats import beta
-import math
 from ghosts import GhostAgent
 
-#Vector2 = pygame.math.Vector2
 pygame.init()
 
 class Game:
-    def __init__(self, algorithm=1, ratio=0.6, map_name='line', n_ghosts = 50, n_games = 5) -> None:
+    def __init__(self, algorithm=1, ratio=0.6, map_name='line', n_ghosts = 10, n_games = 5, n_colours = 2) -> None:
         # Building the map
         self.ratio = ratio
         self.n_games = n_games
         self.n_ghosts = n_ghosts
+        self.n_colours = n_colours
         self.map_name = map_name
         self.build_map(self.map_name)
 
@@ -37,7 +35,7 @@ class Game:
         self.set_tiles_colours()
         self.read_layout(self.map_name)
         self.all_sprites = pygame.sprite.Group()
-        #self.add_ghosts()
+        self.add_ghosts()
 
     def load_icon(self) -> None:
         self.icon = pygame.image.load('.\images\icon.jpg').convert_alpha()
@@ -71,7 +69,6 @@ class Game:
                 self.running = False
                 self.count = 0
         if self.decision:
-            return
             self.running = False
     
     def update(self):

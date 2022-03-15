@@ -6,7 +6,7 @@ import math
 from algorithms import BayesianAlgorithm, BenchmarkAlgorithm
 
 class GhostAgent(pygame.sprite.Sprite):
-    def __init__(self, pos, colour='pink', wall_map = None, friends = None, algorithm2=1):
+    def __init__(self, pos, colour='pink', wall_map = None, friends = None, algorithm_id=1):
         pygame.sprite.Sprite.__init__(self)
         self.pos = pos
         self.direction = (0,0)
@@ -20,9 +20,9 @@ class GhostAgent(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center= (pos[0]*CELL_WIDTH+10,pos[1]*CELL_HEIGHT+10)
         self.observations = {}
-
         self.index = 0
-        if algorithm2 == 1:
+
+        if algorithm_id == 1:
             self.algorithm = BayesianAlgorithm()
         else:
             rows = (len(self.map))
@@ -30,7 +30,7 @@ class GhostAgent(pygame.sprite.Sprite):
             self.algorithm = BenchmarkAlgorithm(rows, columns)
 
         self.stop = False
-        self.algorithm2 = algorithm2
+        self.algorithm_id = algorithm_id
 
     def __str__(self) -> str:
         return "Ghost " + self.colour
@@ -41,21 +41,10 @@ class GhostAgent(pygame.sprite.Sprite):
         return next_move
 
     def update(self):
-        if self.algorithm2 == 1:
+        if self.algorithm_id == 1:
             self.bayesian_algorithm()
         else:
             self.benchmark_algorithm()
-        if self.algorithm.decision == 0:
-            self.image = pygame.image.load(f'.\images\ghost_black.png').convert_alpha()
-            self.image = pygame.transform.scale(self.image, (CELL_WIDTH, CELL_HEIGHT))
-            self.rect = self.image.get_rect()
-            self.rect.center= (self.pos[0]*CELL_WIDTH+10,self.pos[1]*CELL_HEIGHT+10)
-        if self.algorithm.decision == 1:
-            self.image = pygame.image.load(f'.\images\ghost_white.png').convert_alpha()
-            self.image = pygame.transform.scale(self.image, (CELL_WIDTH, CELL_HEIGHT))
-            self.rect = self.image.get_rect()
-            self.rect.center= (self.pos[0]*CELL_WIDTH+10,self.pos[1]*CELL_HEIGHT+10)
-
 
     def walk(self):
         self.direction = self.get_next_move()
@@ -84,6 +73,7 @@ class GhostAgent(pygame.sprite.Sprite):
     
         if self.algorithm.decision != -1:
             self.bayes_broadcast(self.index, self.algorithm.decision)
+            self.update_colour()
         else:
             self.bayes_broadcast(self.index, C)
 
@@ -92,7 +82,7 @@ class GhostAgent(pygame.sprite.Sprite):
             if s != self and isinstance(s, GhostAgent):
                 if abs(s.pos[0] - self.pos[0]) < 3 and abs(s.pos[1] - self.pos[1]) < 3:
                     s.bayes_receive(self.colour, index, info)
-                
+
     def bayes_receive(self, id, i, info):
         if id in self.observations:
             if self.observations[id] != (i, info):
@@ -100,15 +90,6 @@ class GhostAgent(pygame.sprite.Sprite):
         else:
             self.observations[id] = (i, info)
             self.algorithm.update_ratio(info)
-
-    def bdm_broadcast(self, alpha, beta):
-        for s in self.friends.sprites():
-            if s != self:
-                if abs(s.pos[0] - self.pos[0]) < 2 and abs(s.pos[1] - self.pos[1]) < 2:
-                    s.bdm_receive(self, alpha, beta)
-
-    def bdm_receive(self, id, alpha, beta):
-        self.algorithm.observations[id] = (alpha, beta)
 
     def benchmark_algorithm(self):
         if self.stop:
@@ -123,9 +104,31 @@ class GhostAgent(pygame.sprite.Sprite):
             self.bdm_broadcast(alpha, beta)
         
         if self.algorithm.decision != -1:
-            
             print(f'{self.colour} decision: {self.algorithm.decision}')
+            self.update_colour()
             self.stop = True
+    
+    def bdm_broadcast(self, alpha, beta):
+        for s in self.friends.sprites():
+            if s != self:
+                if abs(s.pos[0] - self.pos[0]) < 2 and abs(s.pos[1] - self.pos[1]) < 2:
+                    s.bdm_receive(self, alpha, beta)
+
+    def bdm_receive(self, id, alpha, beta):
+        self.algorithm.observations[id] = (alpha, beta)
+
+
+    def update_colour(self):
+        if self.algorithm.decision == 0:
+            self.image = pygame.image.load(f'.\images\ghost_black.png').convert_alpha()
+            self.image = pygame.transform.scale(self.image, (CELL_WIDTH, CELL_HEIGHT))
+            self.rect = self.image.get_rect()
+            self.rect.center= (self.pos[0]*CELL_WIDTH+10,self.pos[1]*CELL_HEIGHT+10)
+        if self.algorithm.decision == 1:
+            self.image = pygame.image.load(f'.\images\ghost_white.png').convert_alpha()
+            self.image = pygame.transform.scale(self.image, (CELL_WIDTH, CELL_HEIGHT))
+            self.rect = self.image.get_rect()
+            self.rect.center= (self.pos[0]*CELL_WIDTH+10,self.pos[1]*CELL_HEIGHT+10)
 
 class Actions:
     """
@@ -142,38 +145,3 @@ class Actions:
         # West
         (-1, 0)
     ]
-
-class CommunicationBubble(pygame.sprite.Sprite):
-    def __init__(self, text) -> None:
-        pygame.sprite.Sprite.__init__(self)
-        font = pygame.font.Font('freesansbold.ttf', 12)
- 
-        # create a text surface object,
-        # on which text is drawn on it.
-        text = font.render(text, True, WHITE, BLACK)
-        self.image = text
-        # create a rectangular object for the
-        # text surface object
-        pos = (100, 1)
-        self.rect = text.get_rect()
-        self.rect.center= (pos[0]*CELL_WIDTH/3+10,pos[1]*CELL_HEIGHT/3+10)  
-        self.active = True
-        
-    def update(self):
-        if self.active:
-            self.kill()
-
-class Decision(pygame.sprite.Sprite):
-    def __init__(self, text) -> None:
-        pygame.sprite.Sprite.__init__(self)
-        font = pygame.font.Font('freesansbold.ttf', 12)
- 
-        # create a text surface object,
-        # on which text is drawn on it.
-        text = font.render(text, True, WHITE, BLACK)
-        self.image = text
-        # create a rectangular object for the
-        # text surface object
-        pos = (100, 5)
-        self.rect = text.get_rect()
-        self.rect.center= (pos[0]*CELL_WIDTH/3+10,pos[1]*CELL_HEIGHT/3+10) 
