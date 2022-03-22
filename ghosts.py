@@ -33,7 +33,7 @@ class GhostAgent(pygame.sprite.Sprite):
 
     def update(self):
         self.walk()
-        C = COLOURS[self.map[self.pos[0]][self.pos[1]].get_colour()]
+        C = self.map[self.pos[0]][self.pos[1]].get_colour()
         self.algorithm.update(C)
         if self.algorithm.decision != -1:
             self.update_colour()

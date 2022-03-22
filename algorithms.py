@@ -3,6 +3,7 @@ from scipy.stats import beta
 import math
 import matplotlib.pyplot as plt
 import numpy as np
+from settings import *
 
 class BayesianAlgorithm:
     def __init__(self, posterior= 0.99, prior = 1, positive_feedback = True) -> None:
@@ -14,8 +15,12 @@ class BayesianAlgorithm:
         self.last_C = None
         self.positive_feedback = positive_feedback
         self.posterior = posterior
+        self.main_colour = WHITE
 
-    def update(self, C):
+    def update(self, observation):
+        C = 0
+        if observation == self.main_colour:
+            C = 1
         self.last_C = C
         self.update_ratio(C)
         if self.decision == -1:
@@ -39,8 +44,11 @@ class BenchmarkAlgorithm():
         self.phase_1 = self.s / n_ghosts
         self.phase_2 = self.s + self.t_comm 
         self.observations = {}
+        self.colour_map = {GREY: 0, WHITE:1}
     
-    def update(self, C):
+    def update(self, observation):
+        print(observation)
+        C = self.colour_map[observation]
         if self.phase_1 > 0:
             self.update_ratio(C)
             self.phase_1 -= 1

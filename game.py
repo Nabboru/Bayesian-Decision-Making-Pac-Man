@@ -9,7 +9,7 @@ from algorithms import *
 pygame.init()
 
 class Game:
-    def __init__(self, algorithm_id=1, ratio=0.51, map_name='line', n_ghosts = 25, n_games = 100, n_colours = 2) -> None:
+    def __init__(self, algorithm_id, ratio, map_name, n_ghosts, n_games, n_colours) -> None:
         # Building the map
         self.ratio = ratio
         self.n_games = n_games
@@ -34,7 +34,7 @@ class Game:
     def get_algorithm(self):
         if self.algorithm_id == 1:
             return BayesianAlgorithm()
-        else:
+        elif self.algorithm_id == 2:
             rows = len(self.map)
             columns = len(self.map[0])
             return BenchmarkAlgorithm(rows, columns, self.n_ghosts)
@@ -141,11 +141,13 @@ class Game:
     
     def set_tiles_colours(self):
         n_tiles = len(self.tile_list)
-        white_ratio = n_tiles * self.ratio
-        black_ratio = n_tiles * (1 -self.ratio)
-        white_block = [WHITE] * round(white_ratio)
-        black_block = [GREY] * round(black_ratio)
-        self.colour_list = white_block + black_block
+        colour_tiles = [[]] * self.n_colours
+        for i in range(self.n_colours-1):
+            colour_ratio = n_tiles * self.ratio[i]
+            colour_tiles[i] = [CCOLOURS[i]] * round(colour_ratio)
+        colour_ratio = n_tiles * (1 - sum(self.ratio))
+        colour_tiles[self.n_colours-1] = [CCOLOURS[self.n_colours-1]] * round(colour_ratio)
+        self.colour_list = [item for sublist in colour_tiles for item in sublist]
         random.shuffle(self.colour_list)
 
     def read_layout(self, layout):

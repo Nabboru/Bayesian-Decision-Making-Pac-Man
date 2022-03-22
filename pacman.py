@@ -18,19 +18,32 @@ if __name__ == '__main__':
     parser.add_argument('--ghosts', required=False,
                         metavar="number of ghosts",
                         help="Number of Ghosts, e.g. 25")
-
+    parser.add_argument('--colours', required=False,
+                        metavar="number of colours",
+                        help="Number of Colours, e.g. 3")
 
     args = parser.parse_args()
     game = None
-    ratio = 0.55
+    ratio = [0.55]
     map = 'classic'
     ghosts = 25
+    games = 100
+    colours = 2
 
     if args.algorithm != "benchmark" and args.algorithm != "bayesian":
-        raise ValueError('Invalid algorithm.')    
-    
+        raise ValueError('Invalid algorithm.')
+
     if args.ratio:
-        ratio = float(args.ratio)
+        ratio = args.ratio.split(",")
+        ratio = [float(i) for i in ratio]
+
+    if args.colours:
+        if args.algorithm == "benchmark" and int(args.colours) > 2:
+            raise ValueError('Benchmark algorithm is used in Binary scenarios only')
+        colours = int(args.colours)
+    
+    if args.algorithm == "benchmark" and len(ratio) > 1:
+        raise ValueError('Benchmark algorithm is used in Binary scenarios only')
     
     if args.map:
         map = args.map
@@ -38,18 +51,11 @@ if __name__ == '__main__':
     if args.ghosts:
         ghosts = args.ghosts
 
+
     if args.algorithm == "benchmark":
         print("Benchmark algorithm starts")
-        for i in range(5):
-            game = Game(2, ratio, map, ghosts)
-            game.run()
-            while game.running:
-                pass
+        game = Game(2, ratio, map, ghosts, games, 2)
+        game.run()
     else:
-        print("Bayesian algorithm starts")
-        for i in range(5):
-            game = Game(1, ratio, map, ghosts)
-            game.run()
-            while game.running:
-                pass
-
+        game = Game(1, ratio, map, ghosts, games, colours)
+        game.run()
