@@ -6,12 +6,12 @@ import math
 from algorithms import BayesianAlgorithm, BenchmarkAlgorithm
 
 class GhostAgent(pygame.sprite.Sprite):
-    def __init__(self, pos, colour='pink', wall_map = None, n_ghosts = 0, algorithm_id = 1,graphs =False):
+    def __init__(self, pos, colour='pink', wall_map = None, n_ghosts = 0, algorithm = None, graphs =False):
         pygame.sprite.Sprite.__init__(self)
         self.pos = pos
         self.direction = (0,0)
         self.colour = colour
-        self.algorithm = None
+        self.algorithm = algorithm
         self.graphs = graphs
         self.map = wall_map
         self.image = pygame.image.load(f'.\images\ghost_{colour}.png').convert_alpha()
@@ -21,15 +21,7 @@ class GhostAgent(pygame.sprite.Sprite):
 
         if self.graphs:
             self.algorithm.graphs = True
-        if algorithm_id == 1:
-            self.algorithm = BayesianAlgorithm()
-        else:
-            rows = (len(self.map))
-            columns = len(self.map[0])
-            self.algorithm = BenchmarkAlgorithm(rows, columns, n_ghosts)
-
         self.stop = False
-        self.algorithm_id = algorithm_id
 
     def __str__(self) -> str:
         return "Ghost " + self.colour
@@ -40,10 +32,11 @@ class GhostAgent(pygame.sprite.Sprite):
         return next_move
 
     def update(self):
-        if self.algorithm_id == 1:
-            self.bayesian_algorithm()
-        else:
-            self.benchmark_algorithm()
+        self.walk()
+        C = COLOURS[self.map[self.pos[0]][self.pos[1]].get_colour()]
+        self.algorithm.update(C)
+        if self.algorithm.decision != -1:
+            self.update_colour()
 
     def walk(self):
         self.direction = self.get_next_move()
@@ -61,38 +54,18 @@ class GhostAgent(pygame.sprite.Sprite):
                 possible.append(vec)
         return possible
     
-    def bayesian_algorithm(self):
-        self.walk()
-        C = COLOURS[self.map[self.pos[0]][self.pos[1]].get_colour()]
-        self.algorithm.update(C)
-        if self.algorithm.decision != -1:
-            self.update_colour()
-
     def broadcast(self, ghost):
-        if self.algorithm_id == 1:
+        if isinstance(self.algorithm, BayesianAlgorithm):
             if self.algorithm.decision != -1 and self.algorithm.positive_feedback:
                 ghost.bayes_receive(self.algorithm.decision)
             else:
                 ghost.bayes_receive(self.algorithm.last_C)
-
-        if self.algorithm_id == 2:
+        else:
             ghost.bdm_receive(self, self.algorithm.alpha, self.algorithm.beta)
 
 
     def bayes_receive(self, info):
         self.algorithm.update_ratio(info)
-
-    def benchmark_algorithm(self):
-        if self.stop:
-            return
-        self.walk()
-        C = COLOURS[self.map[self.pos[0]][self.pos[1]].get_colour()]
-        self.algorithm.update(C)
-        
-        if self.algorithm.decision != -1:
-            print(f'{self.colour} decision: {self.algorithm.decision}')
-            self.update_colour()
-            self.stop = True
     
     def bdm_receive(self, id, alpha, beta):
         self.algorithm.receive_info(id, alpha, beta)

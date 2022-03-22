@@ -24,7 +24,7 @@ if __name__ == '__main__':
     game = None
     ratio = 0.55
     map = 'classic'
-    ghosts = 4
+    ghosts = 25
 
     if args.algorithm != "benchmark" and args.algorithm != "bayesian":
         raise ValueError('Invalid algorithm.')    
@@ -34,6 +34,9 @@ if __name__ == '__main__':
     
     if args.map:
         map = args.map
+        
+    if args.ghosts:
+        ghosts = args.ghosts
 
     if args.algorithm == "benchmark":
         print("Benchmark algorithm starts")

@@ -5,11 +5,11 @@ import random
 from ghosts import GhostAgent
 import matplotlib.pyplot as plt
 import numpy as np
-
+from algorithms import *
 pygame.init()
 
 class Game:
-    def __init__(self, algorithm=1, ratio=0.51, map_name='line', n_ghosts = 25, n_games = 100, n_colours = 2) -> None:
+    def __init__(self, algorithm_id=1, ratio=0.51, map_name='line', n_ghosts = 25, n_games = 100, n_colours = 2) -> None:
         # Building the map
         self.ratio = ratio
         self.n_games = n_games
@@ -17,8 +17,8 @@ class Game:
         self.n_colours = n_colours
         self.map_name = map_name
         self.build_map(self.map_name)
+        self.algorithm_id = algorithm_id
 
-        self.algorithm = algorithm
         SCREEN_HEIGHT = len(self.map[0]) * 24
         SCREEN_WIDTH = len(self.map) * 20 
 
@@ -28,8 +28,17 @@ class Game:
         self.running = True
         pygame.display.set_caption('Ghosts')
         self.load_icon()
-        self.start_simulation()
 
+        self.start_simulation()
+    
+    def get_algorithm(self):
+        if self.algorithm_id == 1:
+            return BayesianAlgorithm()
+        else:
+            rows = len(self.map)
+            columns = len(self.map[0])
+            return BenchmarkAlgorithm(rows, columns, self.n_ghosts)
+        
     def start_simulation(self):
         self.frame = 0
         self.decision = False
@@ -77,7 +86,7 @@ class Game:
         self.events()
         self.update()
         self.draw()          
-        self.clock.tick(500)
+        self.clock.tick(60)
 
     def events(self) -> None:
         for event in pygame.event.get():
@@ -163,13 +172,12 @@ class Game:
                         (x*CELL_WIDTH, y*CELL_HEIGHT,
                         CELL_WIDTH - 1, CELL_HEIGHT-1), 0, 3)
 
-
     def add_ghosts(self):
         colours = ['pink', 'yellow', 'red', 'blue']
         for i in range(self.n_ghosts):
             colour = random.choice(colours)
             position = random.choice(self.tile_list)
-            ghost = GhostAgent(position, colour, self.map, self.n_ghosts, self.algorithm)
+            ghost = GhostAgent(position, colour, self.map, self.n_ghosts, self.get_algorithm())
             self.all_sprites.add(ghost)
 
     def add_wall(self, x,y):
