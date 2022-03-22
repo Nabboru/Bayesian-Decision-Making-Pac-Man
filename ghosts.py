@@ -6,28 +6,27 @@ import math
 from algorithms import BayesianAlgorithm, BenchmarkAlgorithm
 
 class GhostAgent(pygame.sprite.Sprite):
-    def __init__(self, pos, colour='pink', wall_map = None, friends = None, algorithm_id=1):
+    def __init__(self, pos, colour='pink', wall_map = None, n_ghosts = 0, algorithm_id = 1,graphs =False):
         pygame.sprite.Sprite.__init__(self)
         self.pos = pos
         self.direction = (0,0)
         self.colour = colour
-        self.friends = friends
         self.algorithm = None
-
+        self.graphs = graphs
         self.map = wall_map
         self.image = pygame.image.load(f'.\images\ghost_{colour}.png').convert_alpha()
         self.image = pygame.transform.scale(self.image, (CELL_WIDTH, CELL_HEIGHT))
         self.rect = self.image.get_rect()
         self.rect.center= (pos[0]*CELL_WIDTH+10,pos[1]*CELL_HEIGHT+10)
-        self.observations = {}
-        self.index = 0
 
+        if self.graphs:
+            self.algorithm.graphs = True
         if algorithm_id == 1:
             self.algorithm = BayesianAlgorithm()
         else:
             rows = (len(self.map))
             columns = len(self.map[0])
-            self.algorithm = BenchmarkAlgorithm(rows, columns)
+            self.algorithm = BenchmarkAlgorithm(rows, columns, n_ghosts)
 
         self.stop = False
         self.algorithm_id = algorithm_id
@@ -64,59 +63,39 @@ class GhostAgent(pygame.sprite.Sprite):
     
     def bayesian_algorithm(self):
         self.walk()
-        C = -1
-        if self.algorithm.decision == -1:
-            C = COLOURS[self.map[self.pos[0]][self.pos[1]].get_colour()]
-            self.algorithm.update(C)
-
-        #print(f'{self.colour} decision: {self.algorithm.decision}')
-    
+        C = COLOURS[self.map[self.pos[0]][self.pos[1]].get_colour()]
+        self.algorithm.update(C)
         if self.algorithm.decision != -1:
-            self.bayes_broadcast(self.index, self.algorithm.decision)
             self.update_colour()
-        else:
-            self.bayes_broadcast(self.index, C)
 
-    def bayes_broadcast(self, index, info):
-        for s in self.friends.sprites():
-            if s != self and isinstance(s, GhostAgent):
-                if abs(s.pos[0] - self.pos[0]) < 3 and abs(s.pos[1] - self.pos[1]) < 3:
-                    s.bayes_receive(self.colour, index, info)
+    def broadcast(self, ghost):
+        if self.algorithm_id == 1:
+            if self.algorithm.decision != -1 and self.algorithm.positive_feedback:
+                ghost.bayes_receive(self.algorithm.decision)
+            else:
+                ghost.bayes_receive(self.algorithm.last_C)
 
-    def bayes_receive(self, id, i, info):
-        if id in self.observations:
-            if self.observations[id] != (i, info):
-                self.algorithm.update_ratio(info)
-        else:
-            self.observations[id] = (i, info)
-            self.algorithm.update_ratio(info)
+        if self.algorithm_id == 2:
+            ghost.bdm_receive(self, self.algorithm.alpha, self.algorithm.beta)
+
+
+    def bayes_receive(self, info):
+        self.algorithm.update_ratio(info)
 
     def benchmark_algorithm(self):
         if self.stop:
             return
         self.walk()
         C = COLOURS[self.map[self.pos[0]][self.pos[1]].get_colour()]
-        f = self.algorithm.update(C)
-
-        if f:
-            alpha = f[0]
-            beta = f[1]
-            self.bdm_broadcast(alpha, beta)
+        self.algorithm.update(C)
         
         if self.algorithm.decision != -1:
             print(f'{self.colour} decision: {self.algorithm.decision}')
             self.update_colour()
             self.stop = True
     
-    def bdm_broadcast(self, alpha, beta):
-        for s in self.friends.sprites():
-            if s != self:
-                if abs(s.pos[0] - self.pos[0]) < 2 and abs(s.pos[1] - self.pos[1]) < 2:
-                    s.bdm_receive(self, alpha, beta)
-
     def bdm_receive(self, id, alpha, beta):
-        self.algorithm.observations[id] = (alpha, beta)
-
+        self.algorithm.receive_info(id, alpha, beta)
 
     def update_colour(self):
         if self.algorithm.decision == 0:

@@ -1,14 +1,15 @@
-from turtle import color
 import pygame
 import sys
 from settings import *
 import random
 from ghosts import GhostAgent
+import matplotlib.pyplot as plt
+import numpy as np
 
 pygame.init()
 
 class Game:
-    def __init__(self, algorithm=1, ratio=0.6, map_name='line', n_ghosts = 10, n_games = 5, n_colours = 2) -> None:
+    def __init__(self, algorithm=1, ratio=0.51, map_name='line', n_ghosts = 25, n_games = 100, n_colours = 2) -> None:
         # Building the map
         self.ratio = ratio
         self.n_games = n_games
@@ -29,8 +30,8 @@ class Game:
         self.load_icon()
         self.start_simulation()
 
-    
     def start_simulation(self):
+        self.frame = 0
         self.decision = False
         self.set_tiles_colours()
         self.read_layout(self.map_name)
@@ -43,7 +44,9 @@ class Game:
         pygame.display.set_icon(self.icon)
 
     def run(self) -> None:
-        avg = 0
+        total_avg = 0
+        accuracies = []
+        times = []
         self.count = self.n_games
         while self.count:
             self.start_simulation()
@@ -52,16 +55,29 @@ class Game:
             while self.running:
                 self.game_loop()
             
-            avg += self.stats()
-        print("Final avg:", avg / self.n_games)
+            accuracy = self.stats()
+            total_avg += accuracy
+            accuracies.append(accuracy)
+            times.append(self.frame)
+        
+        x = np.array(times)
+        y = np.array(accuracies)
+        print(times)
+        print(accuracies)
+        plt.scatter(x, y)
+        plt.title('', fontsize='12')
+        plt.xlabel('Frames', fontsize='12')
+        plt.ylabel('Accuracy', fontsize='12')
+        plt.show()
         pygame.quit()
-
         sys.exit()
+
     def game_loop(self):
+        self.frame += 1
         self.events()
         self.update()
         self.draw()          
-        self.clock.tick(400)
+        self.clock.tick(500)
 
     def events(self) -> None:
         for event in pygame.event.get():
@@ -77,14 +93,12 @@ class Game:
             s.update()
             if s.algorithm.decision == -1:
                 self.decision = False
-        """
         for i in self.all_sprites:
             collided_enemies = pygame.sprite.spritecollide(i, self.all_sprites, False, pygame.sprite.collide_circle_ratio(2.0))
             if i in collided_enemies:
                 collided_enemies.remove(i)
             for j in collided_enemies:
                 i.broadcast(j)
-        """
 
     def draw(self):
         self.screen.fill(BLACK)
@@ -99,13 +113,7 @@ class Game:
                 decision_count[0] += 1
             else:
                 decision_count[1] += 1
-        print("Simulation Results")
-        print("-" * 10)
-        print("Number of black: ", decision_count[0])
-        print("Number of white: ", decision_count[1])
         avg = (decision_count[1]) / self.n_ghosts
-        print("Average: ", avg)
-        print("\n")
         return avg
     
     def build_map(self, layout):
@@ -130,7 +138,6 @@ class Game:
         black_block = [GREY] * round(black_ratio)
         self.colour_list = white_block + black_block
         random.shuffle(self.colour_list)
-        print(len(self.colour_list ))
 
     def read_layout(self, layout):
         with open(f"./layouts/{layout}.lay", 'r') as file:
@@ -162,7 +169,7 @@ class Game:
         for i in range(self.n_ghosts):
             colour = random.choice(colours)
             position = random.choice(self.tile_list)
-            ghost = GhostAgent(position, colour, self.map, self.all_sprites, self.algorithm)
+            ghost = GhostAgent(position, colour, self.map, self.n_ghosts, self.algorithm)
             self.all_sprites.add(ghost)
 
     def add_wall(self, x,y):
