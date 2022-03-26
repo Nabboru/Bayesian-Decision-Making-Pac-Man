@@ -71,12 +71,16 @@ class GhostAgent(pygame.sprite.Sprite):
         self.algorithm.receive_info(id, alpha, beta)
 
     def update_colour(self):
-        if self.algorithm.decision == 0:
+        if self.algorithm.decision == -1:
+            self.image = pygame.image.load(f'.\images\ghost_{self.colour}.png').convert_alpha()
+            self.image = pygame.transform.scale(self.image, (CELL_WIDTH, CELL_HEIGHT))
+            self.rect = self.image.get_rect()
+        elif self.algorithm.decision == 0:
             self.image = pygame.image.load(f'.\images\ghost_black.png').convert_alpha()
             self.image = pygame.transform.scale(self.image, (CELL_WIDTH, CELL_HEIGHT))
             self.rect = self.image.get_rect()
             self.rect.center= (self.pos[0]*CELL_WIDTH+10,self.pos[1]*CELL_HEIGHT+10)
-        if self.algorithm.decision == 1:
+        elif self.algorithm.decision == 1:
             self.image = pygame.image.load(f'.\images\ghost_white.png').convert_alpha()
             self.image = pygame.transform.scale(self.image, (CELL_WIDTH, CELL_HEIGHT))
             self.rect = self.image.get_rect()

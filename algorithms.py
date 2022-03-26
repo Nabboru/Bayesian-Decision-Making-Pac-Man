@@ -6,7 +6,7 @@ import numpy as np
 from settings import *
 
 class BayesianAlgorithm:
-    def __init__(self, posterior= 0.99, prior = 1, positive_feedback = True) -> None:
+    def __init__(self, posterior= 0.99, prior = 1, positive_feedback = True, main_colour=WHITE) -> None:
         self.decision = -1
         self.alpha = prior
         self.beta = prior
@@ -15,7 +15,8 @@ class BayesianAlgorithm:
         self.last_C = None
         self.positive_feedback = positive_feedback
         self.posterior = posterior
-        self.main_colour = WHITE
+        self.main_colour = main_colour
+        self.pcs = {}
 
     def update(self, observation):
         C = 0
@@ -27,8 +28,10 @@ class BayesianAlgorithm:
             p = beta.cdf(0.5, self.alpha, self.beta, loc=0, scale=1)
             if p > self.posterior:
                 self.decision = 0
+                self.pcs[self.main_colour] = (1 -p)
             elif (1 - p) > self.posterior:
                 self.decision = 1
+                self.pcs[self.main_colour] = (1 -p)
 
     def update_ratio(self, observation):
         self.alpha += observation
@@ -39,7 +42,7 @@ class BenchmarkAlgorithm():
         self.decision = -1
         self.alpha = 1
         self.beta = 1
-        self.s = 4*0.52*(1-0.52)*0.729 / 0.04
+        self.s = (4*0.52*0.48*0.729) / 0.0016
         self.t_comm = 2 * math.log(n_ghosts ** 2 / 0.1) * (1240)
         self.phase_1 = self.s / n_ghosts
         self.phase_2 = self.s + self.t_comm 
@@ -47,7 +50,6 @@ class BenchmarkAlgorithm():
         self.colour_map = {GREY: 0, WHITE:1}
     
     def update(self, observation):
-        print(observation)
         C = self.colour_map[observation]
         if self.phase_1 > 0:
             self.update_ratio(C)
@@ -57,6 +59,7 @@ class BenchmarkAlgorithm():
         if self.phase_2 > self.s:
             self.observations[self] = (self.alpha, self.beta)
             self.phase_2 -= 1
+            return
 
         alpha_t = 0
         beta_t = 0

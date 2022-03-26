@@ -18,9 +18,11 @@ class Game:
         self.map_name = map_name
         self.build_map(self.map_name)
         self.algorithm_id = algorithm_id
+        print(self.ratio)
 
-        SCREEN_HEIGHT = len(self.map[0]) * 24
-        SCREEN_WIDTH = len(self.map) * 20 
+
+        SCREEN_HEIGHT = len(self.map[0]) * CELL_HEIGHT
+        SCREEN_WIDTH = len(self.map) * CELL_WIDTH
 
         # Pygame settings
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -46,6 +48,7 @@ class Game:
         self.read_layout(self.map_name)
         self.all_sprites = pygame.sprite.Group()
         self.add_ghosts()
+        self.colour_count = 0
 
     def load_icon(self) -> None:
         self.icon = pygame.image.load('.\images\icon.jpg').convert_alpha()
@@ -86,22 +89,33 @@ class Game:
         self.events()
         self.update()
         self.draw()          
-        self.clock.tick(60)
+        self.clock.tick(500)
 
     def events(self) -> None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
                 self.count = 0
-        if self.decision:
+        if self.decision and self.n_colours == 2:
             self.running = False
-    
+        elif self.decision and self.colour_count > self.n_colours - 2:
+            self.running = False
+        elif self.decision:
+            self.colour_count += 1
+            self.reset_ghosts()
+
+    def reset_ghosts(self):
+        for s in self.all_sprites:
+            s.algorithm = BayesianAlgorithm(main_colour=CCOLOURS[self.colour_count])
+            s.update_colour()
+            
     def update(self):
         self.decision = True
         for s in self.all_sprites:
             s.update()
             if s.algorithm.decision == -1:
                 self.decision = False
+        
         for i in self.all_sprites:
             collided_enemies = pygame.sprite.spritecollide(i, self.all_sprites, False, pygame.sprite.collide_circle_ratio(2.0))
             if i in collided_enemies:

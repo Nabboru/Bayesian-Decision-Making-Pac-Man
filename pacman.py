@@ -49,8 +49,7 @@ if __name__ == '__main__':
         map = args.map
         
     if args.ghosts:
-        ghosts = args.ghosts
-
+        ghosts = int(args.ghosts)
 
     if args.algorithm == "benchmark":
         print("Benchmark algorithm starts")
