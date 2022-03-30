@@ -8,22 +8,30 @@ from settings import *
 class BayesianAlgorithm:
     def __init__(self, posterior= 0.99, prior = 1, positive_feedback = True, main_colour=WHITE) -> None:
         self.decision = -1
+        self.prior = prior
         self.alpha = prior
         self.beta = prior
-        self.count = 0
         self.graphs = False
         self.last_C = None
         self.positive_feedback = positive_feedback
         self.posterior = posterior
         self.main_colour = main_colour
         self.pcs = {}
+    
+    def reset(self, colour):
+        self.decision = -1
+        self.alpha = self.prior
+        self.beta = self.prior
+        self.last_C = None
+        self.main_colour = colour
 
     def update(self, observation):
         C = 0
         if observation == self.main_colour:
             C = 1
         self.last_C = C
-        self.update_ratio(C)
+        self.alpha += C
+        self.beta += (1 - C)        
         if self.decision == -1:
             p = beta.cdf(0.5, self.alpha, self.beta, loc=0, scale=1)
             if p > self.posterior:

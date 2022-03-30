@@ -31,12 +31,18 @@ class GhostAgent(pygame.sprite.Sprite):
         next_move = random.choice(moves)
         return next_move
 
-    def update(self):
+    def update(self, reset=False):
+        if reset:
+            self.reset_algorithm()
         self.walk()
         C = self.map[self.pos[0]][self.pos[1]].get_colour()
         self.algorithm.update(C)
-        if self.algorithm.decision != -1:
+        if self.algorithm.decision != -1 and (self.colour != 'black' or self.colour != 'white'):
             self.update_colour()
+    
+    def reset_algorithm(self, colour):
+        self.algorithm.reset(colour)
+        self.update_colour()
 
     def walk(self):
         self.direction = self.get_next_move()
@@ -65,7 +71,8 @@ class GhostAgent(pygame.sprite.Sprite):
 
 
     def bayes_receive(self, info):
-        self.algorithm.update_ratio(info)
+        if info:
+            self.algorithm.update_ratio(info)
     
     def bdm_receive(self, id, alpha, beta):
         self.algorithm.receive_info(id, alpha, beta)
@@ -76,11 +83,13 @@ class GhostAgent(pygame.sprite.Sprite):
             self.image = pygame.transform.scale(self.image, (CELL_WIDTH, CELL_HEIGHT))
             self.rect = self.image.get_rect()
         elif self.algorithm.decision == 0:
+            self.colour = 'black'
             self.image = pygame.image.load(f'.\images\ghost_black.png').convert_alpha()
             self.image = pygame.transform.scale(self.image, (CELL_WIDTH, CELL_HEIGHT))
             self.rect = self.image.get_rect()
             self.rect.center= (self.pos[0]*CELL_WIDTH+10,self.pos[1]*CELL_HEIGHT+10)
         elif self.algorithm.decision == 1:
+            self.colour = 'white'
             self.image = pygame.image.load(f'.\images\ghost_white.png').convert_alpha()
             self.image = pygame.transform.scale(self.image, (CELL_WIDTH, CELL_HEIGHT))
             self.rect = self.image.get_rect()

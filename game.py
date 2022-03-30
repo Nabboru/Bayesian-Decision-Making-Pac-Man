@@ -1,14 +1,20 @@
 import pygame
 import sys
-from settings import *
 import random
-from ghosts import GhostAgent
 import matplotlib.pyplot as plt
 import numpy as np
+from statistics import mean
+from ghosts import GhostAgent
 from algorithms import *
+from settings import *
+
+# Initiate Pygame module
 pygame.init()
 
 class Game:
+    """
+    
+    """
     def __init__(self, algorithm_id, ratio, map_name, n_ghosts, n_games, n_colours) -> None:
         # Building the map
         self.ratio = ratio
@@ -18,8 +24,6 @@ class Game:
         self.map_name = map_name
         self.build_map(self.map_name)
         self.algorithm_id = algorithm_id
-        print(self.ratio)
-
 
         SCREEN_HEIGHT = len(self.map[0]) * CELL_HEIGHT
         SCREEN_WIDTH = len(self.map) * CELL_WIDTH
@@ -30,10 +34,20 @@ class Game:
         self.running = True
         pygame.display.set_caption('Ghosts')
         self.load_icon()
+        self.print_configurations()
 
         self.start_simulation()
+    def print_configurations(self):
+        print("\nSimulation Configuration ")
+        print("=========================")
+        print("Algorithm:", self.algorithm_id)
+        print("Map name: ", self.map_name)
+        print("Number of runs: ", self.n_games)
+        print("Number of colours: ", self.n_colours)
+        print("Ratio: ", self.ratio)
+        print('Number of agents: ', self.n_ghosts)
     
-    def get_algorithm(self):
+    def get_algorithm(self) -> BayesianAlgorithm | BenchmarkAlgorithm:
         if self.algorithm_id == 1:
             return BayesianAlgorithm()
         elif self.algorithm_id == 2:
@@ -41,7 +55,7 @@ class Game:
             columns = len(self.map[0])
             return BenchmarkAlgorithm(rows, columns, self.n_ghosts)
         
-    def start_simulation(self):
+    def start_simulation(self) -> None:
         self.frame = 0
         self.decision = False
         self.set_tiles_colours()
@@ -49,6 +63,7 @@ class Game:
         self.all_sprites = pygame.sprite.Group()
         self.add_ghosts()
         self.colour_count = 0
+        self.reset_ghosts = False
 
     def load_icon(self) -> None:
         self.icon = pygame.image.load('.\images\icon.jpg').convert_alpha()
@@ -72,19 +87,11 @@ class Game:
             accuracies.append(accuracy)
             times.append(self.frame)
         
-        x = np.array(times)
-        y = np.array(accuracies)
-        print(times)
-        print(accuracies)
-        plt.scatter(x, y)
-        plt.title('', fontsize='12')
-        plt.xlabel('Frames', fontsize='12')
-        plt.ylabel('Accuracy', fontsize='12')
-        plt.show()
+        self.plot_results(times, accuracies)
         pygame.quit()
         sys.exit()
 
-    def game_loop(self):
+    def game_loop(self) -> None:
         self.frame += 1
         self.events()
         self.update()
@@ -102,44 +109,59 @@ class Game:
             self.running = False
         elif self.decision:
             self.colour_count += 1
-            self.reset_ghosts()
-
-    def reset_ghosts(self):
-        for s in self.all_sprites:
-            s.algorithm = BayesianAlgorithm(main_colour=CCOLOURS[self.colour_count])
-            s.update_colour()
+            self.reset_ghosts = True
             
-    def update(self):
+    def update(self) -> None:
         self.decision = True
         for s in self.all_sprites:
             s.update()
+            if self.reset_ghosts:
+                s.reset_algorithm(CCOLOURS[self.colour_count])
             if s.algorithm.decision == -1:
                 self.decision = False
-        
-        for i in self.all_sprites:
-            collided_enemies = pygame.sprite.spritecollide(i, self.all_sprites, False, pygame.sprite.collide_circle_ratio(2.0))
-            if i in collided_enemies:
-                collided_enemies.remove(i)
+            collided_enemies = pygame.sprite.spritecollide(s, self.all_sprites, False, pygame.sprite.collide_circle_ratio(2.0))
+            if s in collided_enemies:
+                collided_enemies.remove(s)
             for j in collided_enemies:
-                i.broadcast(j)
+                s.broadcast(j)
+        self.reset_ghosts = False
 
-    def draw(self):
+    def draw(self) -> None:
         self.screen.fill(BLACK)
         self.draw_layout()
         self.all_sprites.draw(self.screen)
         pygame.display.update()
 
-    def stats(self):
-        decision_count = [0, 0]
-        for i in self.all_sprites:
-            if i.algorithm.decision == 0:
-                decision_count[0] += 1
-            else:
-                decision_count[1] += 1
-        avg = (decision_count[1]) / self.n_ghosts
-        return avg
-    
-    def build_map(self, layout):
+    def stats(self) -> float:
+        if self.n_colours == 2:
+            decision_count = [0, 0]
+            for i in self.all_sprites:
+                if i.algorithm.decision == 0:
+                    decision_count[0] += 1
+                else:
+                    decision_count[1] += 1
+            avg = (decision_count[1]) / self.n_ghosts
+            return avg
+        else:
+            count = {WHITE: 0, GREY: 0, PINK: 0}
+            for i in self.all_sprites:
+                count[max(i.algorithm.pcs, key=i.algorithm.pcs.get)] += 1
+            avg = count[GREY] / self.n_ghosts
+            return avg
+
+    def plot_results(self, times, accuracies):
+        x = np.array(times)
+        y = np.array(accuracies)
+        print('\nResults')
+        print('==========')
+        print("Average time: ", mean(times))
+        print("Average accuracy: ", mean(accuracies))
+        plt.scatter(x, y)
+        plt.xlabel('Frames', fontsize='12')
+        plt.ylabel('Accuracy', fontsize='12')
+        plt.show()
+            
+    def build_map(self, layout) -> None:
         rows = 0
         cols = 0
         self.tile_list = []
@@ -196,10 +218,10 @@ class Game:
             ghost = GhostAgent(position, colour, self.map, self.n_ghosts, self.get_algorithm())
             self.all_sprites.add(ghost)
 
-    def add_wall(self, x,y):
+    def add_wall(self, x: int, y:int) -> None:
         self.map[x][y] = Tile(wall=True)
 
-    def add_tile(self, x, y):
+    def add_tile(self, x, y) -> None:
         colour = self.colour_list.pop()
         self.map[x][y] = Tile(colour=colour)
 
@@ -209,5 +231,5 @@ class Tile():
         self.colour = colour
     def is_wall(self) -> bool:
         return self.wall
-    def get_colour(self):
+    def get_colour(self) -> str:
         return self.colour

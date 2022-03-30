@@ -9,6 +9,9 @@ if __name__ == '__main__':
     parser.add_argument("algorithm",
                         metavar="algorithm name",
                         help="'baeysian' or 'benchmark'")
+    parser.add_argument("--n",
+                        metavar="Number of runs",
+                        help="An integer, e.g. 5")
     parser.add_argument('--ratio', required=False,
                         metavar="float number",
                         help='Ratio of whites to black tiles, eg. 0.6')
@@ -32,6 +35,9 @@ if __name__ == '__main__':
 
     if args.algorithm != "benchmark" and args.algorithm != "bayesian":
         raise ValueError('Invalid algorithm.')
+    
+    if args.n:
+        games = int(args.n)
 
     if args.ratio:
         ratio = args.ratio.split(",")
