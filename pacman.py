@@ -58,7 +58,6 @@ if __name__ == '__main__':
         ghosts = int(args.ghosts)
 
     if args.algorithm == "benchmark":
-        print("Benchmark algorithm starts")
         game = Game(2, ratio, map, ghosts, games, 2)
         game.run()
     else:

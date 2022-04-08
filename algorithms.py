@@ -6,12 +6,27 @@ import numpy as np
 from settings import *
 
 class BayesianAlgorithm:
+    """
+    Class that represents the Bayesian algorithm
+    """ 
     def __init__(self, posterior= 0.99, prior = 1, positive_feedback = True, main_colour=WHITE) -> None:
+        """ Create Bayesian Algorithm object
+        Args:
+            posterior (float, optional): the credible threshold which determines
+                if the agents has collected enough samples to make a decision.
+                Defaults to 0.99.
+            prior (int, optional): the initial value of alpha and beta.
+                It represents the prior belief of alpha and beta.
+                Defaults to 1.
+            positive_feedback (bool, optional): controls if agent broadcast the 
+                decision. Defaults to True.
+            main_colour (set(int), optional): the colour seen as success in a 
+                beta model. Defaults to WHITE.
+        """        
         self.decision = -1
         self.prior = prior
         self.alpha = prior
         self.beta = prior
-        self.graphs = False
         self.last_C = None
         self.positive_feedback = positive_feedback
         self.posterior = posterior
@@ -19,6 +34,12 @@ class BayesianAlgorithm:
         self.pcs = {}
     
     def reset(self, colour):
+        """Resets the algorithm's attribuates to its initial values and set
+        a new main colour. 
+
+        Args:
+            colour (set(int)): RGB values of the colour
+        """        
         self.decision = -1
         self.alpha = self.prior
         self.beta = self.prior
@@ -26,6 +47,11 @@ class BayesianAlgorithm:
         self.main_colour = colour
 
     def update(self, observation):
+        """Update the agent's observations and check if the credible threshold has
+        been overcame by the beta model.
+        Args:
+            observation (set(int)): RGB colours of the observed tile
+        """        
         C = 0
         if observation == self.main_colour:
             C = 1
@@ -41,23 +67,43 @@ class BayesianAlgorithm:
                 self.decision = 1
                 self.pcs[self.main_colour] = (1 -p)
 
-    def update_ratio(self, observation):
+    def update_ratio(self, observation:int):
+        """Update alpha and beta with the observation.
+        Observations are 1 if the tile colour is the 'success' colour or
+        0 if the tile is any other colour
+
+        Args:
+            observation (int): observations are either 0 or 1
+        """        
         self.alpha += observation
         self.beta += (1 - observation)
 
+    def __repr__(self) -> str:
+        return "Bayesian Algorithm"
+
 class BenchmarkAlgorithm():
-    def __init__(self, rows, columns, n_ghosts) -> None:
+    def __init__(self, n_ghosts:int) -> None:
+        """_summary_
+
+        Args:
+            n_ghosts (int): _description_
+        """        
         self.decision = -1
         self.alpha = 1
         self.beta = 1
-        self.s = (4*0.52*0.48*0.729) / 0.0016
-        self.t_comm = 2 * math.log(n_ghosts ** 2 / 0.1) * (1240)
-        self.phase_1 = self.s / n_ghosts
-        self.phase_2 = self.s + self.t_comm 
+        self.s = ((4*0.52*0.48*(Z_SCORE**2)) / (EPSILON**2)) / n_ghosts
+        self.t_comm = 2 * math.log((n_ghosts ** 2) / 0.1) * (1240)
+        self.phase_1 = round(self.s / n_ghosts)
+        self.phase_2 = round(self.s + self.t_comm)
         self.observations = {}
         self.colour_map = {GREY: 0, WHITE:1}
     
-    def update(self, observation):
+    def update(self, observation) -> None:
+        """
+
+        Args:
+            observation (tuple[int]): Tuple representing RGB colours
+        """        
         C = self.colour_map[observation]
         if self.phase_1 > 0:
             self.update_ratio(C)
@@ -79,23 +125,25 @@ class BenchmarkAlgorithm():
         else:
             self.decision = 1
         
-    def update_ratio(self, observation):
+    def update_ratio(self, observation: int) -> None:
+        """Updates the Beta model with a new observation
+        Args:
+            observation (int): Either 1 or 0. Where 1 represents the current 
+                main colour and 0 any other colour
+        """        
         self.alpha += observation
         self.beta += (1 - observation)
     
-    def receive_info(self, id, alpha, beta):
+    def receive_info(self, id:object, alpha: int, beta: int):
+        """Add observations by other agents to dictonary
+
+        Args:
+            id (GhostAgent): another agent
+            alpha (int): the other agent's alpha values
+            beta (int): the other agent's beta values
+        """        
         if self.phase_1 <= 0:
             self.observations[id] = (alpha, beta)
-"""
-def plot(a,b,count):
 
-    x = np.linspace(beta.ppf(0.01, a, b),beta.ppf(0.99, a, b), 100)
-
-    fig = plt.figure(figsize=(7,7))
-    plt.xlim(0, 1)
-    plt.plot(x, beta.pdf(x, a, b), 'r-')
-    plt.title('Beta Distribution', fontsize='12')
-    plt.xlabel('Values of Random Variable X (0, 1)', fontsize='12')
-    plt.ylabel('Probability', fontsize='12')
-    fig.savefig(f'fig{count}.png')
-"""
+    def __repr__(self) -> str:
+        return "Benchmark Algorithm"

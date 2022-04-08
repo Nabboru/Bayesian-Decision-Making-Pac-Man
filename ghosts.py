@@ -6,22 +6,15 @@ import math
 from algorithms import BayesianAlgorithm, BenchmarkAlgorithm
 
 class GhostAgent(pygame.sprite.Sprite):
-    def __init__(self, pos, colour='pink', wall_map = None, n_ghosts = 0, algorithm = None, graphs =False):
+    def __init__(self, pos, colour='pink', wall_map = None, algorithm = None):
         pygame.sprite.Sprite.__init__(self)
         self.pos = pos
         self.direction = (0,0)
         self.colour = colour
         self.algorithm = algorithm
-        self.graphs = graphs
         self.map = wall_map
-        self.image = pygame.image.load(f'.\images\ghost_{colour}.png').convert_alpha()
-        self.image = pygame.transform.scale(self.image, (CELL_WIDTH, CELL_HEIGHT))
-        self.rect = self.image.get_rect()
-        self.rect.center= (pos[0]*CELL_WIDTH+10,pos[1]*CELL_HEIGHT+10)
+        self.update_colour()
 
-        if self.graphs:
-            self.algorithm.graphs = True
-        self.stop = False
 
     def __str__(self) -> str:
         return "Ghost " + self.colour
@@ -35,7 +28,8 @@ class GhostAgent(pygame.sprite.Sprite):
         if reset:
             self.reset_algorithm()
         self.walk()
-        C = self.map[self.pos[0]][self.pos[1]].get_colour()
+        x, y = self.pos
+        C = self.map.get_tile_colour(x,y)
         self.algorithm.update(C)
         if self.algorithm.decision != -1 and (self.colour != 'black' or self.colour != 'white'):
             self.update_colour()
@@ -51,16 +45,30 @@ class GhostAgent(pygame.sprite.Sprite):
         self.rect.x += (self.direction[0] * CELL_WIDTH)
         self.rect.y += (self.direction[1] * CELL_HEIGHT)
     
-    def get_possible_actions(self):
+    def get_possible_actions(self) -> list:
+        """_summary_
+
+        Args:
+            self (_type_): _description_
+            int (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """        
         possible = []
         for vec in Actions.directions:
             x = self.pos[0] + vec[0]
             y = self.pos[1] + vec[1]
-            if not self.map[x][y].is_wall():
+            if not self.map.is_wall(x,y):
                 possible.append(vec)
         return possible
     
-    def broadcast(self, ghost):
+    def broadcast(self, ghost: object) -> None:
+        """_summary_
+
+        Args:
+            ghost (GhostAgent): _description_
+        """        
         if isinstance(self.algorithm, BayesianAlgorithm):
             if self.algorithm.decision != -1 and self.algorithm.positive_feedback:
                 ghost.bayes_receive(self.algorithm.decision)
@@ -74,22 +82,30 @@ class GhostAgent(pygame.sprite.Sprite):
         if info:
             self.algorithm.update_ratio(info)
     
-    def bdm_receive(self, id, alpha, beta):
+    def bdm_receive(self, id: object, alpha: int, beta: int) -> None:
+        """_summary_
+
+        Args:
+            id (GhostAgent): _description_
+            alpha (int): _description_
+            beta (int): _description_
+        """        
         self.algorithm.receive_info(id, alpha, beta)
 
-    def update_colour(self):
+    def update_colour(self) -> None:
+        """_summary_
+        """        
         if self.algorithm.decision == -1:
             self.image = pygame.image.load(f'.\images\ghost_{self.colour}.png').convert_alpha()
             self.image = pygame.transform.scale(self.image, (CELL_WIDTH, CELL_HEIGHT))
             self.rect = self.image.get_rect()
+            self.rect.center= (self.pos[0]*CELL_WIDTH+10,self.pos[1]*CELL_HEIGHT+10)
         elif self.algorithm.decision == 0:
-            self.colour = 'black'
             self.image = pygame.image.load(f'.\images\ghost_black.png').convert_alpha()
             self.image = pygame.transform.scale(self.image, (CELL_WIDTH, CELL_HEIGHT))
             self.rect = self.image.get_rect()
             self.rect.center= (self.pos[0]*CELL_WIDTH+10,self.pos[1]*CELL_HEIGHT+10)
         elif self.algorithm.decision == 1:
-            self.colour = 'white'
             self.image = pygame.image.load(f'.\images\ghost_white.png').convert_alpha()
             self.image = pygame.transform.scale(self.image, (CELL_WIDTH, CELL_HEIGHT))
             self.rect = self.image.get_rect()
