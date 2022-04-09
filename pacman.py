@@ -13,7 +13,7 @@ if __name__ == '__main__':
                         metavar="Number of runs",
                         help="An integer, e.g. 5")
     parser.add_argument('--ratio', required=False,
-                        metavar="float number",
+                        metavar="float numbers separed by comma",
                         help='Ratio of whites to black tiles, eg. 0.6')
     parser.add_argument('--map', required=False,
                         metavar="map name",
@@ -30,7 +30,7 @@ if __name__ == '__main__':
     ratio = [0.55]
     map = 'classic'
     ghosts = 25
-    games = 100
+    games = 1
     colours = 2
 
     if args.algorithm != "benchmark" and args.algorithm != "bayesian":
@@ -50,6 +50,9 @@ if __name__ == '__main__':
     
     if args.algorithm == "benchmark" and len(ratio) > 1:
         raise ValueError('Benchmark algorithm is used in Binary scenarios only')
+    
+    if len(ratio) + 1 != colours:
+        raise ValueError('Ratio and number of colours do not match')
     
     if args.map:
         map = args.map

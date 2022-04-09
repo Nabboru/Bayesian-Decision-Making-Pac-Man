@@ -15,7 +15,7 @@ class Game:
     """
     
     """
-    def __init__(self, algorithm_id:int, ratio: list[float], map_name:str, n_ghosts:int, n_games, n_colours) -> None:
+    def __init__(self, algorithm_id:int, ratio: list, map_name:str, n_ghosts:int, n_games:int, n_colours:int) -> None:
         """Create game object
 
         Args:
@@ -241,8 +241,15 @@ class Game:
             self.all_sprites.add(ghost)
 
 class Map():
+    """Map object that represents the environment.
+    """
+    def __init__(self, map_name:str, ratio:list[int]) -> None:
+        """Creates map
 
-    def __init__(self, map_name, ratio) -> None:
+        Args:
+            map_name (str): name of the file
+            ratio (list[int]): ratios of colour
+        """        
         self.grid = []
         self.build_map(map_name)
         self.set_tiles_colours(ratio)
@@ -251,6 +258,11 @@ class Map():
         self.map_name = map_name
     
     def build_map(self, layout) -> None:
+        """Read layout and create logical map.
+
+        Args:
+            layout (str): name of the file with the map's layout
+        """        
         rows = 0
         cols = 0
         self.tile_list = []
@@ -263,7 +275,12 @@ class Map():
                         self.tile_list.append([x, y])
         self.grid = [[Tile() for j in range(rows)] for i in range(cols)]
 
-    def create_tiles_walls(self, layout):
+    def create_tiles_walls(self, layout:str) -> None:
+        """Create tiles and walls according to the layout file
+
+        Args:
+            layout (str): name of the file with the map's layout.
+        """        
         with open(f'./layouts/{layout}.lay', 'r') as file:
             for y, line in enumerate(file):
                 for x, char in enumerate(line):
@@ -272,11 +289,18 @@ class Map():
                     elif char == "*":
                         self.add_tile(x, y)
 
-    def reset_colours(self):
+    def reset_colours(self) -> None:
+        """Reset tile's colours.
+        """        
         self.set_tiles_colours(self.ratio)
         self.create_tiles_walls(self.map_name)
 
-    def set_tiles_colours(self, ratio):
+    def set_tiles_colours(self, ratio: list[float])-> None:
+        """ Set colour for all tiles according to the ratio
+
+        Args:
+            ratio (list[ratio]): list of ratios for colours
+        """        
         n_tiles = len(self.tile_list)
         n_colours = len(ratio) + 1
         colour_tiles = [[]] * n_colours
@@ -289,31 +313,93 @@ class Map():
         random.shuffle(self.colour_list)
     
     def add_wall(self, x: int, y:int) -> None:
+        """Add wall to the map.
+
+        Args:
+            x (int): x-axis value
+            y (int): y-axis value
+        """        
         self.grid[x][y] = Tile(wall=True)
 
-    def add_tile(self, x, y) -> None:
+    def add_tile(self, x:int, y:int) -> None:
+        """Add tile to the map.
+
+        Args:
+            x (int): x-axis value
+            y (int): y-axis value
+        """        
         colour = self.colour_list.pop()
         self.grid[x][y] = Tile(colour=colour)
     
-    def size(self):
+    def size(self) -> set:
+        """Return the width and height of the map.
+
+        Returns:
+             set(int): width and height
+        """        
         return len(self.grid), len(self.grid[0])
     
-    def is_wall(self,x,y):
+    def is_wall(self, x:int, y:int) -> bool:
+        """Return true if cell is a wall
+
+        Args:
+            x (int): x-axis value
+            y (int): y-axis value
+
+        Returns:
+            bool: true if wall, false if not wall
+        """        
         return self.grid[x][y].is_wall()
     
-    def is_tile(self, x, y) -> bool:
+    def is_tile(self, x:int, y: int) -> bool:
+        """Return true if cell is a tile
+
+        Args:
+            x (int): x-axis value
+            y (int): y-axis value
+
+        Returns:
+            bool: true if tile, false if not tile
+        """             
         if self.grid[x][y].get_colour():
             return True
         return False
 
-    def get_tile_colour(self,x,y):
+    def get_tile_colour(self,x,y) -> set:
+        """Get colour of a tile
+
+        Args:
+            x (int): x-axis value
+            y (int): y-axis value
+
+        Returns:
+            set(int): RGB value of the colour
+        """        
         return self.grid[x][y].get_colour()
 
 class Tile():
+    """Represents a tile.
+    """    
     def __init__(self, wall = False, colour=None):
+        """Create tile object
+
+        Args:
+            wall (bool, optional): set tile to a wall or not. Defaults to False.
+            colour (set(int), optional): RGB value of a colour. Defaults to None.
+        """        
         self.wall = wall
         self.colour = colour
     def is_wall(self) -> bool:
+        """Return true if tile is a wall.
+
+        Returns:
+            bool: true if wall, false if not wall
+        """        
         return self.wall
     def get_colour(self) -> str:
+        """Return the tile colour
+
+        Returns:
+            str: RGB value
+        """        
         return self.colour

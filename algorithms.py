@@ -50,7 +50,7 @@ class BayesianAlgorithm:
         """Update the agent's observations and check if the credible threshold has
         been overcame by the beta model.
         Args:
-            observation (set(int)): RGB colours of the observed tile
+            observation (set(int)): RGB colours of the observed tile.
         """        
         C = 0
         if observation == self.main_colour:
@@ -82,11 +82,13 @@ class BayesianAlgorithm:
         return "Bayesian Algorithm"
 
 class BenchmarkAlgorithm():
+    """
+    """    
     def __init__(self, n_ghosts:int) -> None:
-        """_summary_
+        """Create Benchmark object
 
         Args:
-            n_ghosts (int): _description_
+            n_ghosts (int): number of agents in the environment.
         """        
         self.decision = -1
         self.alpha = 1
