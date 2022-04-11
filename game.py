@@ -13,7 +13,7 @@ pygame.init()
 
 class Game:
     """
-    
+    Game simulates the environment and displays it in the screen
     """
     def __init__(self, algorithm_id:int, ratio: list, map_name:str, n_ghosts:int, n_games:int, n_colours:int) -> None:
         """Create game object

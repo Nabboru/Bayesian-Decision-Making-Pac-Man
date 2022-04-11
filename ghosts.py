@@ -1,12 +1,22 @@
 import pygame
 from settings import *
 import random
-from scipy.stats import beta
-import math
 from algorithms import BayesianAlgorithm, BenchmarkAlgorithm
 
 class GhostAgent(pygame.sprite.Sprite):
+    """Class representing the agents. It is responsible for its own image and
+    movement. It is a subclass of pygame's Sprite.
+
+    """    
     def __init__(self, pos, colour='pink', wall_map = None, algorithm = None):
+        """Create GhostAgent object
+
+        Args:
+            pos (list[int]): initial position of agent
+            colour (str, optional): agent's colour. Defaults to 'pink'.
+            wall_map (object, optional): map indicating all tiles. Defaults to None.
+            algorithm (object, optional): algorithm. Defaults to None.
+        """        
         pygame.sprite.Sprite.__init__(self)
         self.pos = pos
         self.direction = (0,0)
@@ -20,11 +30,22 @@ class GhostAgent(pygame.sprite.Sprite):
         return "Ghost " + self.colour
 
     def get_next_move(self):
+        """Return a random move
+
+        Returns:
+            set(int): direction
+        """        
         moves = self.get_possible_actions()
         next_move = random.choice(moves)
         return next_move
 
     def update(self, reset=False):
+        """Updates the agents. The agent moves, observes the tiles and update its
+        algorithm accordingly.
+
+        Args:
+            reset (bool, optional): _description_. Defaults to False.
+        """        
         if reset:
             self.reset_algorithm()
         self.walk()
@@ -35,10 +56,17 @@ class GhostAgent(pygame.sprite.Sprite):
             self.update_colour()
     
     def reset_algorithm(self, colour):
+        """Reset its own algorithm with a new main colour.
+
+        Args:
+            colour (set(str)): rgb value of a colour
+        """        
         self.algorithm.reset(colour)
         self.update_colour()
 
     def walk(self):
+        """Walk in the map
+        """        
         self.direction = self.get_next_move()
         self.pos[0] += self.direction[0]
         self.pos[1] += self.direction[1]
@@ -46,14 +74,10 @@ class GhostAgent(pygame.sprite.Sprite):
         self.rect.y += (self.direction[1] * CELL_HEIGHT)
     
     def get_possible_actions(self) -> list:
-        """_summary_
-
-        Args:
-            self (_type_): _description_
-            int (_type_): _description_
+        """Returns all possible actions a agent can make.
 
         Returns:
-            _type_: _description_
+            list: all possible directions agent can go.
         """        
         possible = []
         for vec in Actions.directions:
@@ -64,10 +88,10 @@ class GhostAgent(pygame.sprite.Sprite):
         return possible
     
     def broadcast(self, ghost: object) -> None:
-        """_summary_
+        """Broadcast observation/decision to another agent.
 
         Args:
-            ghost (GhostAgent): _description_
+            ghost (GhostAgent): other agent
         """        
         if isinstance(self.algorithm, BayesianAlgorithm):
             if self.algorithm.decision != -1 and self.algorithm.positive_feedback:
@@ -79,21 +103,26 @@ class GhostAgent(pygame.sprite.Sprite):
 
 
     def bayes_receive(self, info):
+        """Pass comunicated infomartion to Bayesian algorithm.
+
+        Args:
+            info (int): observation or decision
+        """        
         if info:
             self.algorithm.update_ratio(info)
     
     def bdm_receive(self, id: object, alpha: int, beta: int) -> None:
-        """_summary_
+        """Pass comunicated infomartion to Benchmark algorithm.
 
         Args:
-            id (GhostAgent): _description_
-            alpha (int): _description_
-            beta (int): _description_
+            id (GhostAgent): agent that sent the information
+            alpha (int): white observations
+            beta (int): black observations
         """        
         self.algorithm.receive_info(id, alpha, beta)
 
     def update_colour(self) -> None:
-        """_summary_
+        """Update agent's own image according to its decision.
         """        
         if self.algorithm.decision == -1:
             self.image = pygame.image.load(f'.\images\ghost_{self.colour}.png').convert_alpha()
@@ -113,7 +142,7 @@ class GhostAgent(pygame.sprite.Sprite):
 
 class Actions:
     """
-    A collection of static methods for manipulating move actions.
+    A collection of static attributes representing move actions.
     """
     # Directions
     directions = [

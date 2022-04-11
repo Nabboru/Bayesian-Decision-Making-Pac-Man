@@ -25,15 +25,15 @@ Commands:
 
 Examples:
 Run algorithm 10 times:
-python pacman.py bayesina --n=10
+python pacman.py bayesian --n=10
 
 Run with 5 agents:
 python pacman.py benchmark --ghosts=5
 
-Run with ratio of 0.6
+Run with ratio of 0.6, with white majority.
 python pacman.py bayesian --ratio=0.6
 
-Run the extended bayesian algorithm in environment with 3 colours:
+Run the extended bayesian algorithm in environment with 3 colours with white majority:
 python pacman.py bayesian --ratio=0.6,0.2 --colour=3
 
 To run the algorithm for ten times with a ratio 0.53 in the line map:

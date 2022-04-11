@@ -82,7 +82,7 @@ class BayesianAlgorithm:
         return "Bayesian Algorithm"
 
 class BenchmarkAlgorithm():
-    """
+    """ The Benchmark Algorithm
     """    
     def __init__(self, n_ghosts:int) -> None:
         """Create Benchmark object
@@ -101,7 +101,7 @@ class BenchmarkAlgorithm():
         self.colour_map = {GREY: 0, WHITE:1}
     
     def update(self, observation) -> None:
-        """
+        """Updates the algorithm accordingly to its phase.
 
         Args:
             observation (tuple[int]): Tuple representing RGB colours
