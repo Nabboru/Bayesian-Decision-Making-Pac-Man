@@ -126,7 +126,7 @@ class Game:
         self.events()
         self.update()
         self.draw()          
-        self.clock.tick(500)
+        self.clock.tick(10)
 
     def events(self) -> None:
         for event in pygame.event.get():

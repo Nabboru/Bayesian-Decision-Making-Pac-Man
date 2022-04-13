@@ -1,8 +1,5 @@
 from algorithms import BayesianAlgorithm, BenchmarkAlgorithm
-from ghosts import GhostAgent, Actions
 from settings import *
-import random
-import pygame
 from settings import *
 import pytest
 
@@ -59,9 +56,6 @@ class TestBenchmarkAlgorithm():
     @pytest.fixture()
     def algorithm(self):
         return BenchmarkAlgorithm(n_ghosts=25)
-    @pytest.fixture()
-    def agent(self, algorithm):
-        return GhostAgent([0,0], algorithm=algorithm)
 
     def test_update_ratio_black(self,algorithm):
         algorithm.update_ratio(0)
@@ -107,6 +101,7 @@ class TestBenchmarkAlgorithm():
 
         for i in range(prior_phase1):
             algorithm.update(GREY)
-        
-        
-        
+        prior_alpha = algorithm2.alpha
+        prior_beta = algorithm2.beta
+        algorithm.receive_info(algorithm2, algorithm2.alpha, algorithm2.beta)
+        assert algorithm.observations[algorithm2] == (prior_alpha, prior_beta)
