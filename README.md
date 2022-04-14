@@ -5,14 +5,15 @@ This project was developed in Python 3.10, hence it is recommended
 (but not required) to use a virtual environment like anaconda. To install anaconda,
 check [here](https://docs.anaconda.com/anaconda/install/index.html).
 
-Then create a conda environment with Python 3.10:
+Then create a conda environment with Python 3.10 and activate it:
 ```bash
 conda create -n pac-man python=3.10
+conda activate pac-man
 ```
 
 Install required packages:
 ```bash
-pip install -r requirements
+pip install -r requirements.txt
 ```
 
 ## Running

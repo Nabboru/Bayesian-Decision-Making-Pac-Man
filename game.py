@@ -7,6 +7,7 @@ from statistics import mean
 from ghosts import GhostAgent
 from algorithms import *
 from settings import *
+import os
 
 # Initiate Pygame module
 pygame.init()
@@ -266,7 +267,8 @@ class Map():
         rows = 0
         cols = 0
         self.tile_list = []
-        with open(f'./layouts/{layout}.lay', 'r') as file:
+        file_to_open = os.path.join('layouts', f'{layout}.lay')
+        with open(file_to_open, 'r') as file:
             for y, line in enumerate(file):
                 rows += 1
                 cols = len(line)
@@ -280,8 +282,9 @@ class Map():
 
         Args:
             layout (str): name of the file with the map's layout.
-        """        
-        with open(f'./layouts/{layout}.lay', 'r') as file:
+        """
+        file_to_open = os.path.join('layouts', f'{layout}.lay')
+        with open(file_to_open, 'r') as file:
             for y, line in enumerate(file):
                 for x, char in enumerate(line):
                     if char == "%":

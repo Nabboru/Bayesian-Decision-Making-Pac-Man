@@ -1,7 +1,8 @@
 import pygame
 from settings import *
 import random
-from algorithms import BayesianAlgorithm, BenchmarkAlgorithm
+from algorithms import BayesianAlgorithm
+import os
 
 class GhostAgent(pygame.sprite.Sprite):
     """Class representing the agents. It is responsible for its own image and
@@ -125,17 +126,20 @@ class GhostAgent(pygame.sprite.Sprite):
         """Update agent's own image according to its decision.
         """        
         if self.algorithm.decision == -1:
-            self.image = pygame.image.load(f'.\images\ghost_{self.colour}.png').convert_alpha()
+            image = os.path.join('images', f'ghost_{self.colour}.png')
+            self.image = pygame.image.load(image).convert_alpha()
             self.image = pygame.transform.scale(self.image, (CELL_WIDTH, CELL_HEIGHT))
             self.rect = self.image.get_rect()
             self.rect.center= (self.pos[0]*CELL_WIDTH+10,self.pos[1]*CELL_HEIGHT+10)
         elif self.algorithm.decision == 0:
-            self.image = pygame.image.load(f'.\images\ghost_black.png').convert_alpha()
+            image = os.path.join('images', 'ghost_black.png')
+            self.image = pygame.image.load(image).convert_alpha()
             self.image = pygame.transform.scale(self.image, (CELL_WIDTH, CELL_HEIGHT))
             self.rect = self.image.get_rect()
             self.rect.center= (self.pos[0]*CELL_WIDTH+10,self.pos[1]*CELL_HEIGHT+10)
         elif self.algorithm.decision == 1:
-            self.image = pygame.image.load(f'.\images\ghost_white.png').convert_alpha()
+            image = os.path.join('images', 'ghost_white.png')
+            self.image = pygame.image.load(image).convert_alpha()
             self.image = pygame.transform.scale(self.image, (CELL_WIDTH, CELL_HEIGHT))
             self.rect = self.image.get_rect()
             self.rect.center= (self.pos[0]*CELL_WIDTH+10,self.pos[1]*CELL_HEIGHT+10)
